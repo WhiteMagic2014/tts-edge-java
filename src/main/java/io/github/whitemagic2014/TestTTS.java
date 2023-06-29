@@ -11,7 +11,12 @@ public class TestTTS {
     public static void main(String[] args) {
         Voice voice = TTSVoice.provides().stream().filter(v -> v.getShortName().equals("zh-CN-XiaoyiNeural")).collect(Collectors.toList()).get(0);
         String content = "你好，有什么可以帮助你的吗";
-        new TTS(voice, content).send();
+        new TTS(voice, content)
+//                .voicePitch()
+//                .voiceRate()
+//                .voiceVolume()
+//                .storage()  // the output file storage ,default is ./storage
+                .trans();
     }
 
 }

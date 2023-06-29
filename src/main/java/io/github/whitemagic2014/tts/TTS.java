@@ -59,7 +59,7 @@ public class TTS {
         return this;
     }
 
-    public void send() {
+    public void trans() {
         if (voice == null) {
             throw new RuntimeException("please set voice");
         }
