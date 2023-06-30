@@ -12,15 +12,18 @@ import java.util.Map;
 
 public class TTSWebsocket extends WebSocketClient {
 
-
     private String storage;
-    private String requestId;
+    private String fileName;
 
+
+    public String getFileName() {
+        return fileName;
+    }
 
     public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, String storage, String requestId) throws URISyntaxException {
         super(new URI(serverUri), httpHeaders);
         this.storage = storage;
-        this.requestId = requestId;
+        this.fileName = requestId + ".mp3";
     }
 
     @Override
@@ -37,7 +40,7 @@ public class TTSWebsocket extends WebSocketClient {
 
     @Override
     public void onMessage(ByteBuffer originBytes) {
-        try (FileOutputStream fos = new FileOutputStream(storage + File.separator + requestId + ".mp3", true)) {
+        try (FileOutputStream fos = new FileOutputStream(storage + File.separator + fileName, true)) {
             fos.write(originBytes.array());
             fos.flush();
         } catch (Exception e) {

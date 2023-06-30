@@ -30,16 +30,21 @@ public static void main(String[] args) {
     // Voice can be found in file "voicesList.json" 
     Voice voice = TTSVoice.provides().stream().filter(v -> v.getShortName().equals("zh-CN-XiaoyiNeural")).collect(Collectors.toList()).get(0);
     String content = "你好，有什么可以帮助你的吗";
-    new TTS(voice, content)
+    String fileName = new TTS(voice, content)
 //                .voicePitch()
 //                .voiceRate()
 //                .voiceVolume()
 //                .storage()  // the output file storage ,default is ./storage
             .trans();
+    // you can find the voice file in storage folder        
 }
 ```
 
 ## Version
+
+### 1.0.1
+
+- Optimize: Now, the TTS.trans function will return the name of the voice file.
 
 ### 1.0.0
 

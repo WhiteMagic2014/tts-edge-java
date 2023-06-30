@@ -59,7 +59,7 @@ public class TTS {
         return this;
     }
 
-    public void trans() {
+    public String trans() {
         if (voice == null) {
             throw new RuntimeException("please set voice");
         }
@@ -100,8 +100,10 @@ public class TTS {
             while (client.isOpen()) {
                 // wait close
             }
+            return client.getFileName();
         } catch (URISyntaxException | InterruptedException e) {
             e.printStackTrace();
+            return null;
         }
     }
 
