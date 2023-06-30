@@ -22,6 +22,8 @@ public class TTS {
 
     private Voice voice;
     private String content;
+    private Boolean findHeadHook = false;
+    private String format = "audio-24khz-48kbitrate-mono-mp3";
     private String voicePitch = "+0Hz";
     private String voiceRate = "+0%";
     private String voiceVolume = "+0%";
@@ -42,6 +44,32 @@ public class TTS {
         return this;
     }
 
+    public TTS formatMp3() {
+        this.format = "audio-24khz-48kbitrate-mono-mp3";
+        return this;
+    }
+
+    public TTS formatOpus() {
+        this.format = "webm-24khz-16bit-mono-opus";
+        return this;
+    }
+
+    /**
+     * This hook is more generic as it searches for the file header marker in the given file header and removes it. However, it may have lower efficiency.
+     */
+    public TTS findHeadHook() {
+        this.findHeadHook = true;
+        return this;
+    }
+
+    /**
+     * default
+     * This hook directly specifies the file header marker, which makes it faster. However, if the format changes, it may become unusable.
+     */
+    public TTS fixHeadHook() {
+        this.findHeadHook = false;
+        return this;
+    }
 
     public TTS storage(String storage) {
         this.storage = storage;
@@ -87,9 +115,14 @@ public class TTS {
             headers.put("Cache-Control", "no-cache");
             headers.put("User-Agent", EDGE_UA);
         }
-
+        String fileName = reqId;
+        if (format.equals("audio-24khz-48kbitrate-mono-mp3")) {
+            fileName += ".mp3";
+        } else if (format.equals("webm-24khz-16bit-mono-opus")) {
+            fileName += ".opus";
+        }
         try {
-            TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, storage, reqId);
+            TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, storage, fileName, findHeadHook);
             client.connect();
             while (!client.isOpen()) {
                 // wait open
@@ -100,7 +133,7 @@ public class TTS {
             while (client.isOpen()) {
                 // wait close
             }
-            return client.getFileName();
+            return fileName;
         } catch (URISyntaxException | InterruptedException e) {
             e.printStackTrace();
             return null;
@@ -108,8 +141,7 @@ public class TTS {
     }
 
 
-    public static String mkAudioFormat(String dateStr) {
-        String format = "audio-24khz-48kbitrate-mono-mp3";
+    private String mkAudioFormat(String dateStr) {
         return "X-Timestamp:" + dateStr + "\r\n" +
                 "Content-Type:application/json; charset=utf-8\r\n" +
                 "Path:speech.config\r\n\r\n" +
@@ -124,7 +156,7 @@ public class TTS {
     }
 
 
-    private static String ssmlHeadersPlusData(String requestId, String timestamp, String ssml) {
+    private String ssmlHeadersPlusData(String requestId, String timestamp, String ssml) {
         return "X-RequestId:" + requestId + "\r\n" +
                 "Content-Type:application/ssml+xml\r\n" +
                 "X-Timestamp:" + timestamp + "Z\r\n" +
@@ -132,17 +164,17 @@ public class TTS {
     }
 
 
-    private static String dateToString(Date date) {
+    private String dateToString(Date date) {
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (zzzz)");
         return sdf.format(date);
     }
 
 
-    private static String uuid() {
+    private String uuid() {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    private static String removeIncompatibleCharacters(String input) {
+    private String removeIncompatibleCharacters(String input) {
         if (StringUtils.isBlank(input)) {
             return null;
         }

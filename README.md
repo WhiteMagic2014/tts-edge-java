@@ -31,16 +31,23 @@ public static void main(String[] args) {
     Voice voice = TTSVoice.provides().stream().filter(v -> v.getShortName().equals("zh-CN-XiaoyiNeural")).collect(Collectors.toList()).get(0);
     String content = "你好，有什么可以帮助你的吗";
     String fileName = new TTS(voice, content)
+//                .formatMp3()  // default mp3.
+//                .formatOpus() // or opus
 //                .voicePitch()
 //                .voiceRate()
 //                .voiceVolume()
 //                .storage()  // the output file storage ,default is ./storage
-            .trans();
-    // you can find the voice file in storage folder        
+                .trans();
+        // you can find the voice file in storage folder      
 }
 ```
 
 ## Version
+
+### 1.1.0
+
+- Optimize: Now, the TTS.trans function offers the choice of receiving the output file in two formats, MP3 or opus.
+- Optimize: Add two methods to parse voice file
 
 ### 1.0.1
 
