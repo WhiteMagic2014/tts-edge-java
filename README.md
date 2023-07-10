@@ -2,6 +2,8 @@
 
 java sdk for Edge Read Aloud
 
+[click me have a try](https://server.whitemagic2014.com/tts/)
+
 ## Setup
 
 ### maven
