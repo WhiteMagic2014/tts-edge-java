@@ -28,6 +28,7 @@ public class TTS {
     private String voiceRate = "+0%";
     private String voiceVolume = "+0%";
     private String storage = "./storage";
+    private String fileName = null;
 
     public TTS voicePitch(String voicePitch) {
         this.voicePitch = voicePitch;
@@ -75,6 +76,10 @@ public class TTS {
         this.storage = storage;
         return this;
     }
+    public TTS setFileName(String fileName) {
+        this.fileName = fileName;
+        return this;
+    }
 
 
     public TTS(Voice voice, String content) {
@@ -115,7 +120,7 @@ public class TTS {
             headers.put("Cache-Control", "no-cache");
             headers.put("User-Agent", EDGE_UA);
         }
-        String fileName = reqId;
+        String fileName = this.fileName == null ? reqId: this.fileName;
         if (format.equals("audio-24khz-48kbitrate-mono-mp3")) {
             fileName += ".mp3";
         } else if (format.equals("webm-24khz-16bit-mono-opus")) {
