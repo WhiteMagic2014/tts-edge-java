@@ -132,6 +132,7 @@ public class TTS {
             client.send(ssmlHeadersPlusData);
             while (client.isOpen()) {
                 // wait close
+                Thread.sleep(100);
             }
             return fileName;
         } catch (URISyntaxException | InterruptedException e) {
