@@ -46,6 +46,10 @@ public static void main(String[] args) {
 
 ## Version
 
+### 1.1.1
+
+- Optimize: Fix high CPU usage while waiting for a response 
+
 ### 1.1.0
 
 - Optimize: Now, the TTS.trans function offers the choice of receiving the output file in two formats, MP3 or opus.
