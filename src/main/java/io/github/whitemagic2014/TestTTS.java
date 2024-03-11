@@ -13,6 +13,7 @@ public class TestTTS {
         String content = "你好，有什么可以帮助你的吗";
         String fileName = new TTS(voice, content)
                 .findHeadHook()
+                .fileName("file name")// You can customize the file name; if omitted, a random file name will be generated.
 //                .formatMp3()  // default mp3.
                 .formatOpus() // or opus
 //                .voicePitch()

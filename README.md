@@ -33,6 +33,7 @@ public static void main(String[] args) {
     Voice voice = TTSVoice.provides().stream().filter(v -> v.getShortName().equals("zh-CN-XiaoyiNeural")).collect(Collectors.toList()).get(0);
     String content = "你好，有什么可以帮助你的吗";
     String fileName = new TTS(voice, content)
+                  .fileName("file name")// You can customize the file name; if omitted, a random file name will be generated.
 //                .formatMp3()  // default mp3.
 //                .formatOpus() // or opus
 //                .voicePitch()
@@ -46,9 +47,15 @@ public static void main(String[] args) {
 
 ## Version
 
+### 1.2.0
+
+- Optimize: Now You can customize the file name; if omitted, a random file name will be generated.
+- New:  Now, while generating audio, a VTT subtitle file with the same name will be
+  created.[issue:3](https://github.com/WhiteMagic2014/tts-edge-java/issues/3)
+
 ### 1.1.1
 
-- Optimize: Fix high CPU usage while waiting for a response 
+- Optimize: Fix high CPU usage while waiting for a response
 
 ### 1.1.0
 

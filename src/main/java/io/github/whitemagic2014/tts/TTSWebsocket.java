@@ -1,5 +1,6 @@
 package io.github.whitemagic2014.tts;
 
+import com.alibaba.fastjson.JSONObject;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
@@ -17,6 +18,8 @@ public class TTSWebsocket extends WebSocketClient {
     private String fileName;
     private Boolean findHeadHook;
 
+    private SubMaker subMaker;
+
     public String getFileName() {
         return fileName;
     }
@@ -26,6 +29,7 @@ public class TTSWebsocket extends WebSocketClient {
         this.storage = storage;
         this.fileName = fileName;
         this.findHeadHook = findHeadHook;
+        this.subMaker = new SubMaker(storage + File.separator + fileName);
     }
 
     @Override
@@ -36,7 +40,12 @@ public class TTSWebsocket extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         if (message.contains("Path:turn.end")) {
+            subMaker.generateSubs(10);
             close();
+        } else if (message.contains("\"Type\": \"WordBoundary\"")) {
+            JSONObject json = JSONObject.parseObject(message.substring(message.indexOf("{")));
+            JSONObject item = json.getJSONArray("Metadata").getJSONObject(0).getJSONObject("Data");
+            subMaker.createSub(item.getDouble("Offset"), item.getDouble("Duration"), item.getJSONObject("text").getString("Text"));
         }
     }
 

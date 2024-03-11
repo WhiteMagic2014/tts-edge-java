@@ -28,6 +28,8 @@ public class TTS {
     private String voiceRate = "+0%";
     private String voiceVolume = "+0%";
     private String storage = "./storage";
+    private String fileName;
+
 
     public TTS voicePitch(String voicePitch) {
         this.voicePitch = voicePitch;
@@ -44,6 +46,11 @@ public class TTS {
         return this;
     }
 
+    public TTS fileName(String fileName) {
+        this.fileName = fileName;
+        return this;
+    }
+
     public TTS formatMp3() {
         this.format = "audio-24khz-48kbitrate-mono-mp3";
         return this;
@@ -53,6 +60,7 @@ public class TTS {
         this.format = "webm-24khz-16bit-mono-opus";
         return this;
     }
+
 
     /**
      * This hook is more generic as it searches for the file header marker in the given file header and removes it. However, it may have lower efficiency.
@@ -115,14 +123,14 @@ public class TTS {
             headers.put("Cache-Control", "no-cache");
             headers.put("User-Agent", EDGE_UA);
         }
-        String fileName = reqId;
+        String fName = StringUtils.isBlank(fileName) ? reqId : fileName;
         if (format.equals("audio-24khz-48kbitrate-mono-mp3")) {
-            fileName += ".mp3";
+            fName += ".mp3";
         } else if (format.equals("webm-24khz-16bit-mono-opus")) {
-            fileName += ".opus";
+            fName += ".opus";
         }
         try {
-            TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, storage, fileName, findHeadHook);
+            TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, storage, fName, findHeadHook);
             client.connect();
             while (!client.isOpen()) {
                 // wait open
@@ -134,7 +142,7 @@ public class TTS {
                 // wait close
                 Thread.sleep(100);
             }
-            return fileName;
+            return fName;
         } catch (URISyntaxException | InterruptedException e) {
             e.printStackTrace();
             return null;
