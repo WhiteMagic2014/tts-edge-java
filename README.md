@@ -47,6 +47,30 @@ public static void main(String[] args) {
 
 ## Version
 
+### 1.2.1
+
+- New: In this update, 17 new supported voices have been added, as follows:
+
+```
+    en-US-AvaMultilingualNeural
+    en-US-AndrewMultilingualNeural
+    en-US-EmmaMultilingualNeural
+    en-US-BrianMultilingualNeural
+    en-US-AvaNeural
+    en-US-AndrewNeural
+    en-US-EmmaNeural
+    en-US-BrianNeural
+    fr-CA-ThierryNeural
+    fr-FR-VivienneMultilingualNeural
+    fr-FR-RemyMultilingualNeural
+    de-DE-SeraphinaMultilingualNeural
+    de-DE-FlorianMultilingualNeural
+    it-IT-GiuseppeNeural
+    ko-KR-HyunsuNeural
+    pt-BR-ThalitaNeural
+    es-ES-XimenaNeural
+```
+
 ### 1.2.0
 
 - Optimize: Now You can customize the file name; if omitted, a random file name will be generated.
