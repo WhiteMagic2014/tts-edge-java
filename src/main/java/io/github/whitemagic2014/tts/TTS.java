@@ -29,6 +29,7 @@ public class TTS {
     private String voiceVolume = "+0%";
     private String storage = "./storage";
     private String fileName;
+    private int connectTimeout = 0;
 
 
     public TTS voicePitch(String voicePitch) {
@@ -61,6 +62,10 @@ public class TTS {
         return this;
     }
 
+    public TTS connectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
+        return this;
+    }
 
     /**
      * This hook is more generic as it searches for the file header marker in the given file header and removes it. However, it may have lower efficiency.
@@ -130,7 +135,7 @@ public class TTS {
             fName += ".opus";
         }
         try {
-            TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, storage, fName, findHeadHook);
+            TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, connectTimeout, storage, fName, findHeadHook);
             client.connect();
             while (!client.isOpen()) {
                 // wait open

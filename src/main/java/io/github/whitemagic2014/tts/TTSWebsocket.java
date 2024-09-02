@@ -2,6 +2,7 @@ package io.github.whitemagic2014.tts;
 
 import com.alibaba.fastjson.JSONObject;
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.io.File;
@@ -24,8 +25,8 @@ public class TTSWebsocket extends WebSocketClient {
         return fileName;
     }
 
-    public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, String storage, String fileName, Boolean findHeadHook) throws URISyntaxException {
-        super(new URI(serverUri), httpHeaders);
+    public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout, String storage, String fileName, Boolean findHeadHook) throws URISyntaxException {
+        super(new URI(serverUri), new Draft_6455(), httpHeaders, connectTimeout);
         this.storage = storage;
         this.fileName = fileName;
         this.findHeadHook = findHeadHook;

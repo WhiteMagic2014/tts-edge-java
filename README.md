@@ -40,12 +40,17 @@ public static void main(String[] args) {
 //                .voiceRate()
 //                .voiceVolume()
 //                .storage()  // the output file storage ,default is ./storage
+//                .connectTimeout(0) // set connect timeout
                 .trans();
         // you can find the voice file in storage folder      
 }
 ```
 
 ## Version
+
+### 1.2.2
+
+- Optimize: TTS can now set connectTimeout.
 
 ### 1.2.1
 

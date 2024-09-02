@@ -20,6 +20,7 @@ public class TestTTS {
 //                .voiceRate()
 //                .voiceVolume()
 //                .storage()  // the output file storage ,default is ./storage
+//                .connectTimeout(0) // set connect timeout
                 .trans();
         // you can find the voice file in storage folder
     }
