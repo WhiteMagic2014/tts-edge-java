@@ -48,6 +48,12 @@ public static void main(String[] args) {
 
 ## Version
 
+### 1.2.3
+
+- Optimize: A new parameter, overWrite, has been added. When the same file name is provided, if overWrite = true, it
+  will overwrite the original audio file and VTT subtitle file. If overWrite = false, it will continue to append to the
+  original audio file and VTT subtitle file.
+
 ### 1.2.2
 
 - Optimize: TTS can now set connectTimeout.

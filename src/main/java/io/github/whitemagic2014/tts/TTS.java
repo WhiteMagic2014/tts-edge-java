@@ -30,6 +30,7 @@ public class TTS {
     private String storage = "./storage";
     private String fileName;
     private int connectTimeout = 0;
+    private Boolean overwrite;
 
 
     public TTS voicePitch(String voicePitch) {
@@ -100,6 +101,11 @@ public class TTS {
         return this;
     }
 
+    public TTS overwrite(Boolean overwrite) {
+        this.overwrite = overwrite;
+        return this;
+    }
+
     public String trans() {
         if (voice == null) {
             throw new RuntimeException("please set voice");
@@ -133,6 +139,16 @@ public class TTS {
             fName += ".mp3";
         } else if (format.equals("webm-24khz-16bit-mono-opus")) {
             fName += ".opus";
+        }
+        if (overwrite) {
+            File voiceFile = new File(storage + File.separator + fName);
+            File subFile = new File(storage + File.separator + fName + ".vtt");
+            if (voiceFile.exists()) {
+                voiceFile.delete();
+            }
+            if (subFile.exists()) {
+                subFile.delete();
+            }
         }
         try {
             TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, connectTimeout, storage, fName, findHeadHook);

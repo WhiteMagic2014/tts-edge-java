@@ -14,8 +14,9 @@ public class TestTTS {
         String fileName = new TTS(voice, content)
                 .findHeadHook()
                 .fileName("file name")// You can customize the file name; if omitted, a random file name will be generated.
-//                .formatMp3()  // default mp3.
-                .formatOpus() // or opus
+                .overwrite(false) // When the specified file name is the same, it will either overwrite or append to the file.
+                .formatMp3()  // default mp3.
+//                .formatOpus() // or opus
 //                .voicePitch()
 //                .voiceRate()
 //                .voiceVolume()

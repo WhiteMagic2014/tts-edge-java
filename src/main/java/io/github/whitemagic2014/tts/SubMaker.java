@@ -2,8 +2,7 @@ package io.github.whitemagic2014.tts;
 
 import org.apache.commons.text.StringEscapeUtils;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,15 +11,38 @@ public class SubMaker {
 
     private String fullFilePath;
 
+    private Double lastoffset = 0d;
+
+    private Double note = 0d;
+
+    private Boolean head = true;
+
     public SubMaker(String fullFilePath) {
         this.fullFilePath = fullFilePath.concat(".vtt");
+        File oldFile = new File(this.fullFilePath);
+        String lastNote = "NOTE0";
+        if (oldFile.exists()) {
+            head = false;
+            try (BufferedReader br = new BufferedReader(new FileReader(oldFile))) {
+                String line = "";
+                while ((line = br.readLine()) != null) {
+                    if (line.startsWith("NOTE")) {
+                        lastNote = line;
+                    }
+                }
+                lastoffset = Double.parseDouble(lastNote.replace("NOTE", ""));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private List<Double[]> offset = new ArrayList<>();
     private List<String> subs = new ArrayList<>();
 
     public void createSub(Double start, Double duration, String text) {
-        offset.add(new Double[]{start, start + duration});
+        note = lastoffset + start + duration;
+        offset.add(new Double[]{lastoffset + start, lastoffset + start + duration});
         subs.add(text);
     }
 
@@ -31,11 +53,13 @@ public class SubMaker {
         if (wordsInCue <= 0) {
             throw new IllegalArgumentException("wordsInCue must be greater than 0");
         }
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fullFilePath))) {
-            StringBuilder data = new StringBuilder("WEBVTT\r\n\r\n");
-            bw.write("WEBVTT\r\n\r\n");
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fullFilePath, true))) {
+            StringBuilder data = new StringBuilder();
+            if (head) {
+                bw.write("WEBVTT\r\n\r\n");
+            }
+            bw.write("NOTE" + note + "\r\n\r\n");
             bw.newLine();
-
             int subStateCount = 0;
             double subStateStart = -1.0;
             StringBuilder subStateSubs = new StringBuilder();
