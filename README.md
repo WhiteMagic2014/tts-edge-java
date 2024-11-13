@@ -50,6 +50,10 @@ public static void main(String[] args) {
 
 ## Version
 
+### 1.2.4
+
+- Optimize: The default value for the `overWrite` parameter is now true.
+
 ### 1.2.3
 
 - Optimize: A new parameter, overWrite, has been added. When the same file name is provided, if overWrite = true, it

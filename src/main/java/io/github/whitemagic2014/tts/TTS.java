@@ -30,7 +30,7 @@ public class TTS {
     private String storage = "./storage";
     private String fileName;
     private int connectTimeout = 0;
-    private Boolean overwrite;
+    private Boolean overwrite = true;
 
 
     public TTS voicePitch(String voicePitch) {
