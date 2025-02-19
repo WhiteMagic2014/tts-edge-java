@@ -54,6 +54,8 @@ public static void main(String[] args) {
 ### 1.2.5
 
 - Optimize: Setting the parameter `isRateLimited` to true can resolve rate limiting issues in certain regions.
+- Thanks to user [PoliceZ](https://github.com/PoliceZ), the answer in
+  the [issue](https://github.com/Mai-Onsyn/VeloVoice/issues/9) was helpful to me.
 
 ### 1.2.4
 
