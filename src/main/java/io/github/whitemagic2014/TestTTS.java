@@ -10,9 +10,10 @@ public class TestTTS {
 
     public static void main(String[] args) {
         Voice voice = TTSVoice.provides().stream().filter(v -> v.getShortName().equals("zh-CN-XiaoyiNeural")).collect(Collectors.toList()).get(0);
-        String content = "你好，有什么可以帮助你的吗";
+        String content = "你好，有什么可以帮助你的吗,今天的天气很不错呢";
         String fileName = new TTS(voice, content)
                 .findHeadHook()
+                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
                 .fileName("file name")// You can customize the file name; if omitted, a random file name will be generated.
                 .overwrite(false) // When the specified file name is the same, it will either overwrite or append to the file.
                 .formatMp3()  // default mp3.

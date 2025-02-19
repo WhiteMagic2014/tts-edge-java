@@ -34,6 +34,7 @@ public static void main(String[] args) {
     String content = "你好，有什么可以帮助你的吗";
     String fileName = new TTS(voice, content)
                 .findHeadHook()
+                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions..
                 .fileName("file name")// You can customize the file name; if omitted, a random file name will be generated.
                 .overwrite(false) // When the specified file name is the same, it will either overwrite or append to the file.
                 .formatMp3()  // default mp3.
@@ -49,6 +50,10 @@ public static void main(String[] args) {
 ```
 
 ## Version
+
+### 1.2.5
+
+- Optimize: Setting the parameter `isRateLimited` to true can resolve rate limiting issues in certain regions.
 
 ### 1.2.4
 

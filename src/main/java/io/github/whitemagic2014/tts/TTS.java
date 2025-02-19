@@ -5,6 +5,9 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,6 +34,7 @@ public class TTS {
     private String fileName;
     private int connectTimeout = 0;
     private Boolean overwrite = true;
+    private Boolean isRateLimited = false;
 
 
     public TTS voicePitch(String voicePitch) {
@@ -106,6 +110,14 @@ public class TTS {
         return this;
     }
 
+    /**
+     * Set to true to resolve the rate limiting issue in certain regions.
+     */
+    public TTS isRateLimited(Boolean isRateLimited) {
+        this.isRateLimited = isRateLimited;
+        return this;
+    }
+
     public String trans() {
         if (voice == null) {
             throw new RuntimeException("please set voice");
@@ -150,8 +162,12 @@ public class TTS {
                 subFile.delete();
             }
         }
+        String REQUEST_EDGE_URL = EDGE_URL;
+        if (isRateLimited) {
+            REQUEST_EDGE_URL += createSecMSGEC();
+        }
         try {
-            TTSWebsocket client = new TTSWebsocket(EDGE_URL, headers, connectTimeout, storage, fName, findHeadHook);
+            TTSWebsocket client = new TTSWebsocket(REQUEST_EDGE_URL, headers, connectTimeout, storage, fName, findHeadHook);
             client.connect();
             while (!client.isOpen()) {
                 // wait open
@@ -199,6 +215,28 @@ public class TTS {
         return sdf.format(date);
     }
 
+    public static String createSecMSGEC() {
+        try {
+            String SEC_MS_GEC_Version = "1-130.0.2849.68";
+            long ticks = (long) (Math.floor((System.currentTimeMillis() / 1000.0) + 11644473600l) * 10000000);
+            long roundedTicks = ticks - (ticks % 3000000000L);
+            String str = roundedTicks + "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            byte[] hash = sha256.digest(str.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            String SEC_MS_GEC = hexString.toString().toUpperCase();
+            return String.format("&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s", SEC_MS_GEC, SEC_MS_GEC_Version);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private String uuid() {
         return UUID.randomUUID().toString().replace("-", "");
