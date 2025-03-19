@@ -51,6 +51,10 @@ public static void main(String[] args) {
 
 ## Version
 
+### 1.2.6
+
+- Resolve Conversion Issues Caused by Special Characters.[PR#9](https://github.com/WhiteMagic2014/tts-edge-java/pull/9)
+
 ### 1.2.5
 
 - Optimize: Setting the parameter `isRateLimited` to true can resolve rate limiting issues in certain regions.
@@ -103,7 +107,7 @@ public static void main(String[] args) {
 
 ### 1.1.1
 
-- Optimize: Fix high CPU usage while waiting for a response
+- Optimize: Fix high CPU usage while waiting for a response. [PR#2](https://github.com/WhiteMagic2014/tts-edge-java/pull/2)
 
 ### 1.1.0
 
