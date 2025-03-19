@@ -126,6 +126,7 @@ public class TTS {
         if (StringUtils.isBlank(str)) {
             throw new RuntimeException("invalid content");
         }
+        content = str;
 
         File storageFolder = new File(storage);
         if (!storageFolder.exists()) {
@@ -246,12 +247,29 @@ public class TTS {
         if (StringUtils.isBlank(input)) {
             return null;
         }
+
+        /*
+         *Define the special characters that need to be escaped and their corresponding escape sequences (using XML/HTML as examples).
+         */
+        final Map<Character, String> escapeMap = new HashMap<Character, String>() {{
+            put('<', "&lt;");   // Escape the less-than sign (use &lt;)
+            put('>', "&gt;");   // Escape the greater-than sign (use &gt;)
+            put('&', "&amp;");  // Escape the ampersand (use &amp;)
+            put('"', "&quot;"); // Escape the quotation mark (use &quot;)
+            put('\'', "&apos;");// Escape the apostrophe (use &apos;)
+        }};
+
         StringBuilder output = new StringBuilder();
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
             int code = (int) c;
-            if ((0 <= code && code <= 8) || (11 <= code && code <= 12) || (14 <= code && code <= 31)) {
-                output.append(" ");
+
+            boolean isControlChar = (0 <= code && code <= 8) ||(11 <= code && code <= 12) ||(14 <= code && code <= 31);
+
+            if (isControlChar) {
+                output.append(' ');
+            } else if (escapeMap.containsKey(c)) {
+                output.append(escapeMap.get(c));
             } else {
                 output.append(c);
             }
