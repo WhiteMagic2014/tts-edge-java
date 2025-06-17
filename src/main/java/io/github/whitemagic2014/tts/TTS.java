@@ -16,14 +16,14 @@ import java.util.UUID;
 
 public class TTS {
 
-    private String EDGE_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-    private String EDGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36 Edg/99.0.1150.55";
-    private String EDGE_ORIGIN = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold";
-    private String voicesListUrl = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+    private static final String EDGE_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+    private static final  String EDGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36 Edg/99.0.1150.55";
+    private static final  String EDGE_ORIGIN = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold";
+    private static final  String VOICES_LIST_URL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+
+    private final Voice voice;
 
     private Map<String, String> headers;
-
-    private Voice voice;
     private String content;
     private Boolean findHeadHook = false;
     private String format = "audio-24khz-48kbitrate-mono-mp3";
@@ -36,6 +36,10 @@ public class TTS {
     private Boolean overwrite = true;
     private Boolean isRateLimited = false;
 
+    public TTS(Voice voice, String content) {
+        this.voice = voice;
+        this.content = content;
+    }
 
     public TTS voicePitch(String voicePitch) {
         this.voicePitch = voicePitch;
@@ -92,12 +96,6 @@ public class TTS {
     public TTS storage(String storage) {
         this.storage = storage;
         return this;
-    }
-
-
-    public TTS(Voice voice, String content) {
-        this.voice = voice;
-        this.content = content;
     }
 
     public TTS headers(Map<String, String> headers) {
