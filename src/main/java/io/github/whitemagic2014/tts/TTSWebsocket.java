@@ -22,12 +22,15 @@ public class TTSWebsocket extends WebSocketClient {
     private Boolean findHeadHook;
     private SubMaker subMaker;
 
-    public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout, String storage, String fileName, Boolean findHeadHook) throws URISyntaxException {
+    public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout, String storage, String fileName,
+                        Boolean findHeadHook, boolean enableVttFile) throws URISyntaxException {
         super(new URI(serverUri), new Draft_6455(), httpHeaders, connectTimeout);
         this.storage = storage;
         this.fileName = fileName;
         this.findHeadHook = findHeadHook;
-        this.subMaker = new SubMaker(storage + File.separator + fileName);
+        if (enableVttFile) {
+            this.subMaker = new SubMaker(storage + File.separator + fileName);
+        }
     }
 
     @Override
@@ -36,12 +39,16 @@ public class TTSWebsocket extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         if (message.contains("Path:turn.end")) {
-            subMaker.generateSubs(10);
+            if (subMaker != null) {
+                subMaker.generateSubs(10);
+            }
             close();
         } else if (message.contains("\"Type\": \"WordBoundary\"")) {
             JSONObject json = JSONObject.parseObject(message.substring(message.indexOf("{")));
             JSONObject item = json.getJSONArray("Metadata").getJSONObject(0).getJSONObject("Data");
-            subMaker.createSub(item.getDouble("Offset"), item.getDouble("Duration"), item.getJSONObject("text").getString("Text"));
+            if (subMaker != null) {
+                subMaker.createSub(item.getDouble("Offset"), item.getDouble("Duration"), item.getJSONObject("text").getString("Text"));
+            }
         }
     }
 

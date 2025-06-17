@@ -44,6 +44,11 @@ public class TTS {
      */
     private Boolean isRateLimited = false;
 
+    /**
+     * Whether to enable VTT file support, default false
+     */
+    private boolean enableVttFile = false;
+
     public TTS(Voice voice, String content) {
         this.voice = voice;
         this.content = content;
@@ -122,12 +127,12 @@ public class TTS {
             requestEdgeUrl += createSecMSGEC();
         }
         try {
-            TTSWebsocket client = new TTSWebsocket(requestEdgeUrl, headers, connectTimeout, storage, fName, findHeadHook);
             client.connect();
             while (!client.isOpen()) {
                 // wait open
                 Thread.sleep(100);
             }
+            TTSWebsocket client = new TTSWebsocket(requestEdgeUrl, headers, connectTimeout, storage, fName, findHeadHook, enableVttFile);
             client.send(audioFormat);
             client.send(ssmlHeadersPlusData);
             while (client.isOpen()) {
