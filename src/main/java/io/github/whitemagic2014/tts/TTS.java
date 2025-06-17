@@ -99,36 +99,24 @@ public class TTS {
         if (!storageFolder.exists()) {
             storageFolder.mkdirs();
         }
-
-        String dateStr = dateToString(new Date());
-        String reqId = uuid();
-        String audioFormat = mkAudioFormat(dateStr, format);
-        String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
-        String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
-
-        String fName = StringUtils.isBlank(fileName) ? reqId : fileName;
-        if ("audio-24khz-48kbitrate-mono-mp3".equals(format)) {
-            fName += ".mp3";
-        } else if ("webm-24khz-16bit-mono-opus".equals(format)) {
-            fName += ".opus";
-        }
-        if (overwrite) {
-            File voiceFile = new File(storage + File.separator + fName);
-            File subFile = new File(storage + File.separator + fName + ".vtt");
-            if (voiceFile.exists()) {
-                voiceFile.delete();
-            }
-            if (subFile.exists()) {
-                subFile.delete();
-            }
-        }
-        String requestEdgeUrl = EDGE_URL;
-        if (isRateLimited) {
-            requestEdgeUrl += createSecMSGEC();
-        }
         try {
-            TTSWebsocket client = new TTSWebsocket(requestEdgeUrl, headers, connectTimeout, storage, fName, findHeadHook, enableVttFile);
+            TTSWebsocket client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
             client.connectBlocking();
+
+            String dateStr = dateToString(new Date());
+            String reqId = uuid();
+            String audioFormat = mkAudioFormat(dateStr, format);
+            String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
+            String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
+
+            String fName = StringUtils.isBlank(fileName) ? reqId : fileName;
+            if ("audio-24khz-48kbitrate-mono-mp3".equals(format)) {
+                fName += ".mp3";
+            } else if ("webm-24khz-16bit-mono-opus".equals(format)) {
+                fName += ".opus";
+            }
+            MessageListener messageListener = new MessageListener(storage, fName, findHeadHook, enableVttFile, overwrite);
+            client.openSession(messageListener);
             client.send(audioFormat);
             client.send(ssmlHeadersPlusData);
             client.finishBlocking();
@@ -165,7 +153,10 @@ public class TTS {
         return new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (zzzz)").format(date);
     }
 
-    public static String createSecMSGEC() {
+    public static String createSecMSGEC(boolean isRateLimited) {
+        if (!isRateLimited) {
+            return EDGE_URL;
+        }
         try {
             String SEC_MS_GEC_Version = "1-130.0.2849.68";
             long ticks = (long) (Math.floor((System.currentTimeMillis() / 1000.0) + 11644473600L) * 10000000);
@@ -182,7 +173,7 @@ public class TTS {
                 hexString.append(hex);
             }
             String SEC_MS_GEC = hexString.toString().toUpperCase();
-            return String.format("&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s", SEC_MS_GEC, SEC_MS_GEC_Version);
+            return EDGE_URL + String.format("&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s", SEC_MS_GEC, SEC_MS_GEC_Version);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
