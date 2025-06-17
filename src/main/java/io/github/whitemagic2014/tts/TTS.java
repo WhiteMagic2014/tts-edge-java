@@ -127,18 +127,11 @@ public class TTS {
             requestEdgeUrl += createSecMSGEC();
         }
         try {
-            client.connect();
-            while (!client.isOpen()) {
-                // wait open
-                Thread.sleep(100);
-            }
             TTSWebsocket client = new TTSWebsocket(requestEdgeUrl, headers, connectTimeout, storage, fName, findHeadHook, enableVttFile);
+            client.connectBlocking();
             client.send(audioFormat);
             client.send(ssmlHeadersPlusData);
-            while (client.isOpen()) {
-                // wait close
-                Thread.sleep(100);
-            }
+            client.finishBlocking();
             return fName;
         } catch (URISyntaxException | InterruptedException e) {
             throw new IllegalStateException(e);

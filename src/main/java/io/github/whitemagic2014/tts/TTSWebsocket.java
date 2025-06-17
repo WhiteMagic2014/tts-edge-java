@@ -12,6 +12,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class TTSWebsocket extends WebSocketClient {
 
@@ -21,6 +22,11 @@ public class TTSWebsocket extends WebSocketClient {
     private String fileName;
     private Boolean findHeadHook;
     private SubMaker subMaker;
+
+    /**
+     * When a complete session ends, this sessionLatch will become 0.
+     */
+    private CountDownLatch sessionLatch = new CountDownLatch(1);
 
     public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout, String storage, String fileName,
                         Boolean findHeadHook, boolean enableVttFile) throws URISyntaxException {
@@ -124,11 +130,16 @@ public class TTSWebsocket extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
+        sessionLatch.countDown();
     }
 
     @Override
     public void onError(Exception ex) {
         ex.printStackTrace();
+    }
+
+    public void finishBlocking() throws InterruptedException {
+        sessionLatch.await();
     }
 
     public String getFileName() {
