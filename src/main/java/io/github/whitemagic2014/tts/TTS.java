@@ -47,6 +47,11 @@ public class TTS {
     public TTS(Voice voice, String content) {
         this.voice = voice;
         this.content = content;
+        this.headers = new HashMap<>();
+        this.headers.put("Origin", EDGE_ORIGIN);
+        this.headers.put("Pragma", "no-cache");
+        this.headers.put("Cache-Control", "no-cache");
+        this.headers.put("User-Agent", EDGE_UA);
     }
 
     public TTS formatMp3() {
@@ -80,11 +85,10 @@ public class TTS {
         if (voice == null) {
             throw new RuntimeException("please set voice");
         }
-        String str = removeIncompatibleCharacters(content);
-        if (StringUtils.isBlank(str)) {
+        this.content = removeIncompatibleCharacters(content);
+        if (StringUtils.isBlank(this.content)) {
             throw new RuntimeException("invalid content");
         }
-        content = str;
 
         File storageFolder = new File(storage);
         if (!storageFolder.exists()) {
@@ -93,18 +97,10 @@ public class TTS {
 
         String dateStr = dateToString(new Date());
         String reqId = uuid();
-
         String audioFormat = mkAudioFormat(dateStr, format);
         String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
         String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
 
-        if (headers == null) {
-            headers = new HashMap<>();
-            headers.put("Origin", EDGE_ORIGIN);
-            headers.put("Pragma", "no-cache");
-            headers.put("Cache-Control", "no-cache");
-            headers.put("User-Agent", EDGE_UA);
-        }
         String fName = StringUtils.isBlank(fileName) ? reqId : fileName;
         if ("audio-24khz-48kbitrate-mono-mp3".equals(format)) {
             fName += ".mp3";
@@ -140,11 +136,9 @@ public class TTS {
             }
             return fName;
         } catch (URISyntaxException | InterruptedException e) {
-            e.printStackTrace();
-            return null;
+            throw new IllegalStateException(e);
         }
     }
-
 
     private static String mkAudioFormat(String dateStr, String format) {
         return "X-Timestamp:" + dateStr + "\r\n" +
