@@ -136,8 +136,8 @@ public class TTS {
         String dateStr = dateToString(new Date());
         String reqId = uuid();
 
-        String audioFormat = mkAudioFormat(dateStr);
-        String ssml = mkssml(voice.getLocale(), voice.getName());
+        String audioFormat = mkAudioFormat(dateStr, format);
+        String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
         String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
 
         if (headers == null) {
@@ -148,9 +148,9 @@ public class TTS {
             headers.put("User-Agent", EDGE_UA);
         }
         String fName = StringUtils.isBlank(fileName) ? reqId : fileName;
-        if (format.equals("audio-24khz-48kbitrate-mono-mp3")) {
+        if ("audio-24khz-48kbitrate-mono-mp3".equals(format)) {
             fName += ".mp3";
-        } else if (format.equals("webm-24khz-16bit-mono-opus")) {
+        } else if ("webm-24khz-16bit-mono-opus".equals(format)) {
             fName += ".opus";
         }
         if (overwrite) {
@@ -163,12 +163,12 @@ public class TTS {
                 subFile.delete();
             }
         }
-        String REQUEST_EDGE_URL = EDGE_URL;
+        String requestEdgeUrl = EDGE_URL;
         if (isRateLimited) {
-            REQUEST_EDGE_URL += createSecMSGEC();
+            requestEdgeUrl += createSecMSGEC();
         }
         try {
-            TTSWebsocket client = new TTSWebsocket(REQUEST_EDGE_URL, headers, connectTimeout, storage, fName, findHeadHook);
+            TTSWebsocket client = new TTSWebsocket(requestEdgeUrl, headers, connectTimeout, storage, fName, findHeadHook);
             client.connect();
             while (!client.isOpen()) {
                 // wait open
@@ -188,7 +188,7 @@ public class TTS {
     }
 
 
-    private String mkAudioFormat(String dateStr) {
+    private static String mkAudioFormat(String dateStr, String format) {
         return "X-Timestamp:" + dateStr + "\r\n" +
                 "Content-Type:application/json; charset=utf-8\r\n" +
                 "Path:speech.config\r\n\r\n" +
@@ -196,14 +196,14 @@ public class TTS {
     }
 
 
-    private String mkssml(String locate, String voiceName) {
+    private static String mkssml(String locate, String voiceName, String voicePitch, String voiceRate, String voiceVolume, String content) {
         return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='" + locate + "'>" +
                 "<voice name='" + voiceName + "'><prosody pitch='" + voicePitch + "' rate='" + voiceRate + "' volume='" + voiceVolume + "'>" +
                 content + "</prosody></voice></speak>";
     }
 
 
-    private String ssmlHeadersPlusData(String requestId, String timestamp, String ssml) {
+    private static String ssmlHeadersPlusData(String requestId, String timestamp, String ssml) {
         return "X-RequestId:" + requestId + "\r\n" +
                 "Content-Type:application/ssml+xml\r\n" +
                 "X-Timestamp:" + timestamp + "Z\r\n" +
@@ -211,15 +211,14 @@ public class TTS {
     }
 
 
-    private String dateToString(Date date) {
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (zzzz)");
-        return sdf.format(date);
+    private static String dateToString(Date date) {
+        return new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (zzzz)").format(date);
     }
 
     public static String createSecMSGEC() {
         try {
             String SEC_MS_GEC_Version = "1-130.0.2849.68";
-            long ticks = (long) (Math.floor((System.currentTimeMillis() / 1000.0) + 11644473600l) * 10000000);
+            long ticks = (long) (Math.floor((System.currentTimeMillis() / 1000.0) + 11644473600L) * 10000000);
             long roundedTicks = ticks - (ticks % 3000000000L);
             String str = roundedTicks + "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
@@ -239,11 +238,11 @@ public class TTS {
         }
     }
 
-    private String uuid() {
+    private static String uuid() {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    private String removeIncompatibleCharacters(String input) {
+    private static String removeIncompatibleCharacters(String input) {
         if (StringUtils.isBlank(input)) {
             return null;
         }
@@ -276,5 +275,4 @@ public class TTS {
         }
         return output.toString();
     }
-
 }
