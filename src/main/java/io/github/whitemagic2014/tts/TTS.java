@@ -1,6 +1,8 @@
 package io.github.whitemagic2014.tts;
 
 import io.github.whitemagic2014.tts.bean.Voice;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -14,6 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Data
+@Accessors(chain = true, fluent = true)
 public class TTS {
 
     private static final String EDGE_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
@@ -34,31 +38,15 @@ public class TTS {
     private String fileName;
     private int connectTimeout = 0;
     private Boolean overwrite = true;
+
+    /**
+     * Set to true to resolve the rate limiting issue in certain regions.
+     */
     private Boolean isRateLimited = false;
 
     public TTS(Voice voice, String content) {
         this.voice = voice;
         this.content = content;
-    }
-
-    public TTS voicePitch(String voicePitch) {
-        this.voicePitch = voicePitch;
-        return this;
-    }
-
-    public TTS voiceRate(String voiceRate) {
-        this.voiceRate = voiceRate;
-        return this;
-    }
-
-    public TTS voiceVolume(String voiceVolume) {
-        this.voiceVolume = voiceVolume;
-        return this;
-    }
-
-    public TTS fileName(String fileName) {
-        this.fileName = fileName;
-        return this;
     }
 
     public TTS formatMp3() {
@@ -68,11 +56,6 @@ public class TTS {
 
     public TTS formatOpus() {
         this.format = "webm-24khz-16bit-mono-opus";
-        return this;
-    }
-
-    public TTS connectTimeout(int connectTimeout) {
-        this.connectTimeout = connectTimeout;
         return this;
     }
 
@@ -90,29 +73,6 @@ public class TTS {
      */
     public TTS fixHeadHook() {
         this.findHeadHook = false;
-        return this;
-    }
-
-    public TTS storage(String storage) {
-        this.storage = storage;
-        return this;
-    }
-
-    public TTS headers(Map<String, String> headers) {
-        this.headers = headers;
-        return this;
-    }
-
-    public TTS overwrite(Boolean overwrite) {
-        this.overwrite = overwrite;
-        return this;
-    }
-
-    /**
-     * Set to true to resolve the rate limiting issue in certain regions.
-     */
-    public TTS isRateLimited(Boolean isRateLimited) {
-        this.isRateLimited = isRateLimited;
         return this;
     }
 
