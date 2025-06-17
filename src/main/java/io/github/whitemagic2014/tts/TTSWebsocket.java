@@ -15,15 +15,12 @@ import java.util.Map;
 
 public class TTSWebsocket extends WebSocketClient {
 
+    private static final byte[] HEAD = new byte[]{0x50, 0x61, 0x74, 0x68, 0x3a, 0x61, 0x75, 0x64, 0x69, 0x6f, 0x0d, 0x0a};
+
     private String storage;
     private String fileName;
     private Boolean findHeadHook;
-
     private SubMaker subMaker;
-
-    public String getFileName() {
-        return fileName;
-    }
 
     public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout, String storage, String fileName, Boolean findHeadHook) throws URISyntaxException {
         super(new URI(serverUri), new Draft_6455(), httpHeaders, connectTimeout);
@@ -34,9 +31,7 @@ public class TTSWebsocket extends WebSocketClient {
     }
 
     @Override
-    public void onOpen(ServerHandshake handshakedata) {
-
-    }
+    public void onOpen(ServerHandshake handshakedata) { }
 
     @Override
     public void onMessage(String message) {
@@ -59,8 +54,6 @@ public class TTSWebsocket extends WebSocketClient {
         }
     }
 
-    private static byte[] head = new byte[]{0x50, 0x61, 0x74, 0x68, 0x3a, 0x61, 0x75, 0x64, 0x69, 0x6f, 0x0d, 0x0a};
-
     /**
      * This implementation method is more generic as it searches for the file header marker in the given file header and removes it. However, it may have lower efficiency.
      *
@@ -69,10 +62,10 @@ public class TTSWebsocket extends WebSocketClient {
     private void findHeadHook(ByteBuffer originBytes) {
         byte[] origin = originBytes.array();
         int headIndex = -1;
-        for (int i = 0; i < origin.length - head.length; i++) {
+        for (int i = 0; i < origin.length - HEAD.length; i++) {
             boolean match = true;
-            for (int j = 0; j < head.length; j++) {
-                if (origin[i + j] != head[j]) {
+            for (int j = 0; j < HEAD.length; j++) {
+                if (origin[i + j] != HEAD[j]) {
                     match = false;
                     break;
                 }
@@ -83,7 +76,7 @@ public class TTSWebsocket extends WebSocketClient {
             }
         }
         if (headIndex != -1) {
-            byte[] voiceBytesRemoveHead = Arrays.copyOfRange(origin, headIndex + head.length, origin.length);
+            byte[] voiceBytesRemoveHead = Arrays.copyOfRange(origin, headIndex + HEAD.length, origin.length);
             try (FileOutputStream fos = new FileOutputStream(storage + File.separator + fileName, true)) {
                 fos.write(voiceBytesRemoveHead);
                 fos.flush();
@@ -129,5 +122,9 @@ public class TTSWebsocket extends WebSocketClient {
     @Override
     public void onError(Exception ex) {
         ex.printStackTrace();
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 }
