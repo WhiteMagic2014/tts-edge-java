@@ -16,11 +16,6 @@ import java.util.concurrent.CountDownLatch;
 
 public class TTSWebsocket extends WebSocketClient {
 
-    /**
-     * When a complete session ends, this sessionLatch will become 0.
-     */
-    private CountDownLatch sessionLatch;
-
     private MessageListener messageListener;
 
     public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout) throws URISyntaxException {
@@ -44,7 +39,7 @@ public class TTSWebsocket extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        sessionLatch.countDown();
+        System.out.println("TTSWebsocket closed:" + reason);
     }
 
     @Override
@@ -53,11 +48,10 @@ public class TTSWebsocket extends WebSocketClient {
     }
 
     public void finishBlocking() throws InterruptedException {
-        this.sessionLatch.await();
+        this.messageListener.finishBlocking();
     }
 
     public void openSession(MessageListener messageListener) {
         this.messageListener = messageListener;
-        this.sessionLatch = new CountDownLatch(1);
     }
 }

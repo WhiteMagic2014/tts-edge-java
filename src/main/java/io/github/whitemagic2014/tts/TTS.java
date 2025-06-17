@@ -4,6 +4,7 @@ import io.github.whitemagic2014.tts.bean.Voice;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -13,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -37,6 +39,10 @@ public class TTS {
     private String storage = "./storage";
     private String fileName;
     private int connectTimeout = 0;
+
+    /**
+     * When the specified file name is the same, it will either overwrite or append to the file.
+     */
     private Boolean overwrite = true;
 
     /**
@@ -48,6 +54,17 @@ public class TTS {
      * Whether to enable VTT file support, default false
      */
     private boolean enableVttFile = false;
+
+    /**
+     * this via is use to batch convert to voice. <br/>
+     * pair-key: the text content
+     * pair-value：output filename
+     */
+    private List<Pair<String, String>> contentAndFilePairList;
+
+    public TTS(Voice voice) {
+        this(voice, null);
+    }
 
     public TTS(Voice voice, String content) {
         this.voice = voice;
@@ -86,15 +103,10 @@ public class TTS {
         return this;
     }
 
-    public String trans() {
+    public TTS trans() {
         if (voice == null) {
             throw new RuntimeException("please set voice");
         }
-        this.content = removeIncompatibleCharacters(content);
-        if (StringUtils.isBlank(this.content)) {
-            throw new RuntimeException("invalid content");
-        }
-
         File storageFolder = new File(storage);
         if (!storageFolder.exists()) {
             storageFolder.mkdirs();
@@ -102,28 +114,38 @@ public class TTS {
         try {
             TTSWebsocket client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
             client.connectBlocking();
-
-            String dateStr = dateToString(new Date());
-            String reqId = uuid();
-            String audioFormat = mkAudioFormat(dateStr, format);
-            String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
-            String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
-
-            String fName = StringUtils.isBlank(fileName) ? reqId : fileName;
-            if ("audio-24khz-48kbitrate-mono-mp3".equals(format)) {
-                fName += ".mp3";
-            } else if ("webm-24khz-16bit-mono-opus".equals(format)) {
-                fName += ".opus";
+            if (StringUtils.isNotBlank(content)) {
+                this.content = removeIncompatibleCharacters(content);
+                doTrans(client, content, fileName);
             }
-            MessageListener messageListener = new MessageListener(storage, fName, findHeadHook, enableVttFile, overwrite);
-            client.openSession(messageListener);
-            client.send(audioFormat);
-            client.send(ssmlHeadersPlusData);
-            client.finishBlocking();
-            return fName;
+            if (contentAndFilePairList != null) {
+                for (Pair<String, String> pair : contentAndFilePairList) {
+                    doTrans(client, pair.getKey(), pair.getValue());
+                }
+            }
+            return this;
         } catch (URISyntaxException | InterruptedException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private void doTrans(TTSWebsocket client, String content, String filename) throws InterruptedException {
+        String dateStr = dateToString(new Date());
+        String reqId = uuid();
+        String audioFormat = mkAudioFormat(dateStr, format);
+        String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
+        String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
+        String realFilename = StringUtils.isBlank(filename) ? reqId : filename;
+        if ("audio-24khz-48kbitrate-mono-mp3".equals(format)) {
+            realFilename += ".mp3";
+        } else if ("webm-24khz-16bit-mono-opus".equals(format)) {
+            realFilename += ".opus";
+        }
+        MessageListener messageListener = new MessageListener(storage, realFilename, findHeadHook, enableVttFile, overwrite);
+        client.openSession(messageListener);
+        client.send(audioFormat);
+        client.send(ssmlHeadersPlusData);
+        client.finishBlocking();
     }
 
     private static String mkAudioFormat(String dateStr, String format) {
@@ -187,7 +209,6 @@ public class TTS {
         if (StringUtils.isBlank(input)) {
             return null;
         }
-
         /*
          *Define the special characters that need to be escaped and their corresponding escape sequences (using XML/HTML as examples).
          */
@@ -202,10 +223,7 @@ public class TTS {
         StringBuilder output = new StringBuilder();
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
-            int code = (int) c;
-
-            boolean isControlChar = (0 <= code && code <= 8) ||(11 <= code && code <= 12) ||(14 <= code && code <= 31);
-
+            boolean isControlChar = (int) c <= 8 || 11 <= (int) c && (int) c <= 12 || 14 <= (int) c && (int) c <= 31;
             if (isControlChar) {
                 output.append(' ');
             } else if (escapeMap.containsKey(c)) {
@@ -214,6 +232,10 @@ public class TTS {
                 output.append(c);
             }
         }
-        return output.toString();
+        String newContent = output.toString();
+        if (StringUtils.isBlank(newContent)) {
+            throw new RuntimeException("invalid content: " + input);
+        }
+        return newContent;
     }
 }

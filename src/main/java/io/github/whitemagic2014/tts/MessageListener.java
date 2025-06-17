@@ -6,11 +6,13 @@
 package io.github.whitemagic2014.tts;
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author huangtianpei
@@ -21,20 +23,25 @@ public class MessageListener {
     private static final byte[] HEAD = new byte[]{0x50, 0x61, 0x74, 0x68, 0x3a, 0x61, 0x75, 0x64, 0x69, 0x6f, 0x0d, 0x0a};
 
     private String storage;
-    private String fileName;
+    private String filename;
     private Boolean findHeadHook;
     private SubMaker subMaker;
 
-    public MessageListener(String storage, String fileName, Boolean findHeadHook, boolean enableVttFile, boolean overwrite) {
+    /**
+     * When a complete session ends, this sessionLatch will become 0.
+     */
+    private CountDownLatch sessionLatch = new CountDownLatch(1);
+
+    public MessageListener(String storage, String filename, Boolean findHeadHook, boolean enableVttFile, boolean overwrite) {
         this.storage = storage;
-        this.fileName = fileName;
+        this.filename = filename;
         this.findHeadHook = findHeadHook;
         if (enableVttFile) {
-            this.subMaker = new SubMaker(storage + File.separator + fileName);
+            this.subMaker = new SubMaker(storage + File.separator + filename);
         }
         if (overwrite) {
-            File voiceFile = new File(storage + File.separator + fileName);
-            File subFile = new File(storage + File.separator + fileName + ".vtt");
+            File voiceFile = new File(storage + File.separator + filename);
+            File subFile = new File(storage + File.separator + filename + ".vtt");
             if (voiceFile.exists()) {
                 voiceFile.delete();
             }
@@ -49,6 +56,7 @@ public class MessageListener {
             if (subMaker != null) {
                 subMaker.generateSubs(10);
             }
+            sessionLatch.countDown();
         } else if (message.contains("\"Type\": \"WordBoundary\"")) {
             JSONObject json = JSONObject.parseObject(message.substring(message.indexOf("{")));
             JSONObject item = json.getJSONArray("Metadata").getJSONObject(0).getJSONObject("Data");
@@ -64,6 +72,10 @@ public class MessageListener {
         } else {
             fixHeadHook(originBytes);
         }
+    }
+
+    public void finishBlocking() throws InterruptedException {
+        this.sessionLatch.await();
     }
 
     /**
@@ -89,7 +101,7 @@ public class MessageListener {
         }
         if (headIndex != -1) {
             byte[] voiceBytesRemoveHead = Arrays.copyOfRange(origin, headIndex + HEAD.length, origin.length);
-            try (FileOutputStream fos = new FileOutputStream(storage + File.separator + fileName, true)) {
+            try (FileOutputStream fos = new FileOutputStream(storage + File.separator + filename, true)) {
                 fos.write(voiceBytesRemoveHead);
                 fos.flush();
             } catch (Exception ex) {
@@ -119,7 +131,7 @@ public class MessageListener {
             skip = 105;
         }
         byte[] voiceBytesRemoveHead = Arrays.copyOfRange(origin, skip, origin.length);
-        try (FileOutputStream fos = new FileOutputStream(storage + File.separator + fileName, true)) {
+        try (FileOutputStream fos = new FileOutputStream(storage + File.separator + filename, true)) {
             fos.write(voiceBytesRemoveHead);
             fos.flush();
         } catch (Exception ex) {
