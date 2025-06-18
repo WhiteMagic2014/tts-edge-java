@@ -1,18 +1,13 @@
 package io.github.whitemagic2014.tts;
 
-import com.alibaba.fastjson.JSONObject;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 public class TTSWebsocket extends WebSocketClient {
 
