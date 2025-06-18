@@ -3,7 +3,9 @@ package io.github.whitemagic2014.tts;
 import io.github.whitemagic2014.tts.bean.Voice;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
@@ -12,11 +14,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Data
 @Accessors(chain = true, fluent = true)
@@ -60,7 +67,11 @@ public class TTS {
      * pair-key: the text content
      * pair-value：output filename
      */
-    private List<Pair<String, String>> contentAndFilePairList;
+    private List<Pair<String, String>> contentAndFilePairList = new ArrayList<>();
+
+    private int parallelThreadSize = 1;
+
+    private ExecutorService executor;
 
     public TTS(Voice voice) {
         this(voice, null);
@@ -107,20 +118,30 @@ public class TTS {
         if (voice == null) {
             throw new RuntimeException("please set voice");
         }
-        File storageFolder = new File(storage);
-        if (!storageFolder.exists()) {
-            storageFolder.mkdirs();
-        }
+        init();
         try {
-            TTSWebsocket client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
-            client.connectBlocking();
             if (StringUtils.isNotBlank(content)) {
+                TTSWebsocket client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
+                client.connectBlocking();
                 this.content = removeIncompatibleCharacters(content);
                 doTrans(client, content, fileName);
             }
-            if (contentAndFilePairList != null) {
-                for (Pair<String, String> pair : contentAndFilePairList) {
-                    doTrans(client, pair.getKey(), pair.getValue());
+            List<List<Pair<String, String>>> partitionList = ListUtils.partition(contentAndFilePairList, parallelThreadSize);
+            for (List<Pair<String, String>> pairList : partitionList) {
+                TTSWebsocket client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
+                client.connectBlocking();
+                for (Pair<String, String> pair : pairList) {
+                    if (executor != null && !executor.isShutdown()) {
+                        executor.execute(() -> {
+                            try {
+                                doTrans(client, pair.getKey(), pair.getValue());
+                            } catch (InterruptedException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        });
+                    } else {
+                        doTrans(client, pair.getKey(), pair.getValue());
+                    }
                 }
             }
             return this;
@@ -148,6 +169,18 @@ public class TTS {
         client.finishBlocking();
     }
 
+    private void init() {
+        File storageFolder = new File(storage);
+        if (!storageFolder.exists()) {
+            storageFolder.mkdirs();
+        }
+        if (executor == null && parallelThreadSize > 1) {
+            executor = new ThreadPoolExecutor(parallelThreadSize, parallelThreadSize, 0, TimeUnit.DAYS,
+                    new LinkedBlockingQueue<>(parallelThreadSize),
+                    new BasicThreadFactory.Builder().daemon(true).namingPattern("trans-worker-%d").build());
+        }
+    }
+
     private static String mkAudioFormat(String dateStr, String format) {
         return "X-Timestamp:" + dateStr + "\r\n" +
                 "Content-Type:application/json; charset=utf-8\r\n" +
@@ -155,13 +188,11 @@ public class TTS {
                 "{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"true\"},\"outputFormat\":\"" + format + "\"}}}}\n";
     }
 
-
     private static String mkssml(String locate, String voiceName, String voicePitch, String voiceRate, String voiceVolume, String content) {
         return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='" + locate + "'>" +
                 "<voice name='" + voiceName + "'><prosody pitch='" + voicePitch + "' rate='" + voiceRate + "' volume='" + voiceVolume + "'>" +
                 content + "</prosody></voice></speak>";
     }
-
 
     private static String ssmlHeadersPlusData(String requestId, String timestamp, String ssml) {
         return "X-RequestId:" + requestId + "\r\n" +
@@ -169,7 +200,6 @@ public class TTS {
                 "X-Timestamp:" + timestamp + "Z\r\n" +
                 "Path:ssml\r\n\r\n" + ssml;
     }
-
 
     private static String dateToString(Date date) {
         return new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (zzzz)").format(date);

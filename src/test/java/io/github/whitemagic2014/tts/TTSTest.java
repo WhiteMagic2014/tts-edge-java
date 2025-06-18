@@ -64,6 +64,7 @@ public class TTSTest {
                 .findHeadHook()
                 .isRateLimited(true)
                 .overwrite(true)
+                .parallelThreadSize(2)
                 .contentAndFilePairList(contentAndFilePairList)
                 .formatMp3()
                 .trans();
