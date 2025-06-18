@@ -1,12 +1,7 @@
-/*
- * Copyright (c) 2025 by XUANWU INFORMATION TECHNOLOGY CO.
- *             All rights reserved
- */
 
 package io.github.whitemagic2014.tts;
 
 import com.alibaba.fastjson.JSONObject;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,10 +9,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
-/**
- * @author huangtianpei
- * @date 2025-06-17
- */
 public class MessageListener {
 
     private static final byte[] HEAD = new byte[]{0x50, 0x61, 0x74, 0x68, 0x3a, 0x61, 0x75, 0x64, 0x69, 0x6f, 0x0d, 0x0a};
