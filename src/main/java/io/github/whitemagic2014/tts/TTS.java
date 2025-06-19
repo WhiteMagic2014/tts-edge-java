@@ -1,10 +1,8 @@
 package io.github.whitemagic2014.tts;
 
+import io.github.whitemagic2014.tts.bean.TransRecord;
 import io.github.whitemagic2014.tts.bean.Voice;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -18,11 +16,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 public class TTS {
 
@@ -64,11 +59,14 @@ public class TTS {
      * pair-key: the text content
      * pair-value：output filename
      */
-    private List<Pair<String, String>> contentAndFilePairList = new ArrayList<>();
+    private List<TransRecord> recordList = new ArrayList<>();
 
     private int parallelThreadSize = 1;
 
-    private ExecutorService executor;
+    /**
+     * This map is used to cache webSocket or in the multithreaded scenario where each thread has a unique webSocket.
+     */
+    private final Map<Long, TTSWebsocket> websocketMap = new ConcurrentHashMap<>();
 
     public TTS(Voice voice) {
         this(voice, null);
@@ -77,11 +75,7 @@ public class TTS {
     public TTS(Voice voice, String content) {
         this.voice = voice;
         this.content = content;
-        this.headers = new HashMap<>();
-        this.headers.put("Origin", EDGE_ORIGIN);
-        this.headers.put("Pragma", "no-cache");
-        this.headers.put("Cache-Control", "no-cache");
-        this.headers.put("User-Agent", EDGE_UA);
+    }
 
     public TTS voicePitch(String voicePitch) {
         this.voicePitch = voicePitch;
@@ -135,9 +129,6 @@ public class TTS {
         return this;
     }
 
-        if (voice == null) {
-            throw new RuntimeException("please set voice");
-        }
     public TTS storage(String storage) {
         this.storage = storage;
         return this;
@@ -170,37 +161,20 @@ public class TTS {
         this.recordList = recordList;
         return this;
     }
+
     public String trans() {
         init();
-        try {
-            if (StringUtils.isNotBlank(content)) {
-                TTSWebsocket client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
-                client.connectBlocking();
-                this.content = removeIncompatibleCharacters(content);
-                doTrans(client, content, fileName);
-            }
-            List<List<Pair<String, String>>> partitionList = ListUtils.partition(contentAndFilePairList, parallelThreadSize);
-            for (List<Pair<String, String>> pairList : partitionList) {
-                TTSWebsocket client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
-                client.connectBlocking();
-                for (Pair<String, String> pair : pairList) {
-                    if (executor != null && !executor.isShutdown()) {
-                        executor.execute(() -> {
-                            try {
-                                doTrans(client, pair.getKey(), pair.getValue());
-                            } catch (InterruptedException e) {
-                                throw new IllegalStateException(e);
-                            }
-                        });
-                    } else {
-                        doTrans(client, pair.getKey(), pair.getValue());
-                    }
-                }
-            }
-            return this;
-        } catch (URISyntaxException | InterruptedException e) {
-            throw new IllegalStateException(e);
+        this.content = removeIncompatibleCharacters(content);
+        if (StringUtils.isBlank(content)) {
+            throw new IllegalArgumentException("content must not be blank");
         }
+        return doTrans(content, fileName);
+    }
+
+    public void batchTrans() {
+        init();
+        Stream<TransRecord> stream = parallelThreadSize > 1 ? recordList.parallelStream() : recordList.stream();
+        stream.forEach(record -> doTrans(record.getContent(), record.getFilename()));
     }
 
     /**
@@ -218,8 +192,8 @@ public class TTS {
         } else if ("webm-24khz-16bit-mono-opus".equals(format)) {
             realFilename += ".opus";
         }
-        MessageListener messageListener = new MessageListener(storage, realFilename, findHeadHook, enableVttFile, overwrite);
-        client.openSession(messageListener);
+        TTSWebsocket client = getTtsWebsocket();
+        client.openSession(new MessageListener(storage, realFilename, findHeadHook, enableVttFile, overwrite));
         client.send(audioFormat);
         client.send(ssmlHeadersPlusData);
         client.finishBlocking();
@@ -227,16 +201,39 @@ public class TTS {
     }
 
     private void init() {
+        if (voice == null) {
+            throw new IllegalArgumentException("please set voice");
+        }
+        if (headers == null) {
+            this.headers = new HashMap<>();
+            this.headers.put("Origin", EDGE_ORIGIN);
+            this.headers.put("Pragma", "no-cache");
+            this.headers.put("Cache-Control", "no-cache");
+            this.headers.put("User-Agent", EDGE_UA);
+        }
         File storageFolder = new File(storage);
         if (!storageFolder.exists()) {
             storageFolder.mkdirs();
         }
-        if (executor == null && parallelThreadSize > 1) {
-            executor = new ThreadPoolExecutor(parallelThreadSize, parallelThreadSize, 0, TimeUnit.DAYS,
-                    new LinkedBlockingQueue<>(parallelThreadSize),
-                    new BasicThreadFactory.Builder().daemon(true).namingPattern("trans-worker-%d").build(),
-                    new CallerRunsPolicy());
+        if (parallelThreadSize > 1) {
+            System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", String.valueOf(parallelThreadSize));
         }
+    }
+
+    private TTSWebsocket getTtsWebsocket() {
+        return websocketMap.compute(Thread.currentThread().getId(), (threadId, client) -> {
+            try {
+                if (client == null) {
+                    client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
+                }
+                if (!client.isOpen()) {
+                    client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
+                }
+                return client;
+            } catch (URISyntaxException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private static String mkAudioFormat(String dateStr, String format) {

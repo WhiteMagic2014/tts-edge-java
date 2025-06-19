@@ -13,8 +13,9 @@ public class TTSWebsocket extends WebSocketClient {
 
     private MessageListener messageListener;
 
-    public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout) throws URISyntaxException {
+    public TTSWebsocket(String serverUri, Map<String, String> httpHeaders, int connectTimeout) throws URISyntaxException, InterruptedException {
         super(new URI(serverUri), new Draft_6455(), httpHeaders, connectTimeout);
+        super.connectBlocking();
     }
 
     @Override
@@ -42,8 +43,12 @@ public class TTSWebsocket extends WebSocketClient {
         ex.printStackTrace();
     }
 
-    public void finishBlocking() throws InterruptedException {
-        this.messageListener.finishBlocking();
+    public void finishBlocking() {
+        try {
+            this.messageListener.finishBlocking();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void openSession(MessageListener messageListener) {

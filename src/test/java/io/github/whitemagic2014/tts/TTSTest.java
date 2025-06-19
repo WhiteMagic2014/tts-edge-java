@@ -1,9 +1,16 @@
 package io.github.whitemagic2014.tts;
 
+import io.github.whitemagic2014.tts.bean.TransRecord;
 import io.github.whitemagic2014.tts.bean.Voice;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -44,10 +51,10 @@ public class TTSTest {
     }
 
     /**
-     * 测试单内容场景能否转换成功
+     * 测试批量内容场景能否转换成功
      */
     @Test
-    void should_convert_to_mp3_file_success_with_multi_content() {
+    void should_convert_to_mp3_file_success_with_multi_content() throws IOException {
         String voiceName = "zh-CN-XiaoyiNeural";
         Optional<Voice> voiceOptional = TTSVoice.provides()
                 .stream()
@@ -57,16 +64,31 @@ public class TTSTest {
             throw new IllegalStateException("voice not found：" + voiceName);
         }
         Voice voice = voiceOptional.get();
-        List<Pair<String, String>> contentAndFilePairList = new ArrayList<>();
-        contentAndFilePairList.add(Pair.of("hello tts, 你好，有什么可以帮助你的吗", "1.test-tts"));
-        contentAndFilePairList.add(Pair.of("hello multi tts, 你好，有什么可以帮助我的吗", "2.test-tts"));
+        List<TransRecord> recordList = new ArrayList<>();
+        String store = "./storage";
+        for (int i = 0; i < 100; i++) {
+            TransRecord record = new TransRecord();
+            record.setContent(i + ", hello tts, 你好，有什么可以帮助你的吗");
+            record.setFilename(i + ".test-tts");
+            recordList.add(record);
+            Files.deleteIfExists(Paths.get(buildFilename(store, record)));
+        }
         new TTS(voice)
                 .findHeadHook()
                 .isRateLimited(true)
                 .overwrite(true)
-                .parallelThreadSize(2)
-                .contentAndFilePairList(contentAndFilePairList)
+                .parallel(12)
+                .batch(recordList)
+                .storage(store)
                 .formatMp3()
-                .trans();
+                .batchTrans();
+        for (TransRecord record : recordList) {
+            Path path = Paths.get(buildFilename(store, record));
+            Assertions.assertTrue(Files.exists(path), "file not found in " + path.toString());
+        }
+    }
+
+    private static String buildFilename(String store, TransRecord record) {
+        return store + File.separator + record.getFilename() + ".mp3";
     }
 }
