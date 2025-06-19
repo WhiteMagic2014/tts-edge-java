@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 import java.util.concurrent.TimeUnit;
 
 @Data
@@ -177,7 +178,8 @@ public class TTS {
         if (executor == null && parallelThreadSize > 1) {
             executor = new ThreadPoolExecutor(parallelThreadSize, parallelThreadSize, 0, TimeUnit.DAYS,
                     new LinkedBlockingQueue<>(parallelThreadSize),
-                    new BasicThreadFactory.Builder().daemon(true).namingPattern("trans-worker-%d").build());
+                    new BasicThreadFactory.Builder().daemon(true).namingPattern("trans-worker-%d").build(),
+                    new CallerRunsPolicy());
         }
     }
 
