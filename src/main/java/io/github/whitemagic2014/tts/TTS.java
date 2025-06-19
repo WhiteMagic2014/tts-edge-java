@@ -55,9 +55,7 @@ public class TTS {
     private boolean enableVttFile = true;
 
     /**
-     * this via is use to batch convert to voice. <br/>
-     * pair-key: the text content
-     * pair-value：output filename
+     * this via is use to batch convert to voice.
      */
     private List<TransRecord> recordList = new ArrayList<>();
 
@@ -319,7 +317,7 @@ public class TTS {
         }
         String newContent = output.toString();
         if (StringUtils.isBlank(newContent)) {
-            throw new RuntimeException("invalid content: " + input);
+            throw new IllegalArgumentException("content contains illegal characters. " + input);
         }
         return newContent;
     }
