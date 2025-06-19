@@ -1,7 +1,5 @@
 package io.github.whitemagic2014.tts.bean;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
 public class TransRecord {
 
     private String content;
