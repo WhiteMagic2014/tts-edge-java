@@ -135,7 +135,6 @@ public class TTS {
         return this;
     }
 
-    public TTS trans() {
         if (voice == null) {
             throw new RuntimeException("please set voice");
         }
@@ -171,6 +170,7 @@ public class TTS {
         this.recordList = recordList;
         return this;
     }
+    public String trans() {
         init();
         try {
             if (StringUtils.isNotBlank(content)) {
@@ -203,7 +203,10 @@ public class TTS {
         }
     }
 
-    private void doTrans(TTSWebsocket client, String content, String filename) throws InterruptedException {
+    /**
+     * @return The real filename
+     */
+    private String doTrans(String content, String filename) {
         String dateStr = dateToString(new Date());
         String reqId = uuid();
         String audioFormat = mkAudioFormat(dateStr, format);
@@ -220,6 +223,7 @@ public class TTS {
         client.send(audioFormat);
         client.send(ssmlHeadersPlusData);
         client.finishBlocking();
+        return realFilename;
     }
 
     private void init() {
