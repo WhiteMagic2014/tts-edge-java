@@ -1,8 +1,6 @@
 package io.github.whitemagic2014.tts;
 
 import io.github.whitemagic2014.tts.bean.Voice;
-import lombok.Data;
-import lombok.experimental.Accessors;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -26,8 +24,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 import java.util.concurrent.TimeUnit;
 
-@Data
-@Accessors(chain = true, fluent = true)
 public class TTS {
 
     private static final String EDGE_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
@@ -61,7 +57,7 @@ public class TTS {
     /**
      * Whether to enable VTT file support, default false
      */
-    private boolean enableVttFile = false;
+    private boolean enableVttFile = true;
 
     /**
      * this via is use to batch convert to voice. <br/>
@@ -86,6 +82,25 @@ public class TTS {
         this.headers.put("Pragma", "no-cache");
         this.headers.put("Cache-Control", "no-cache");
         this.headers.put("User-Agent", EDGE_UA);
+
+    public TTS voicePitch(String voicePitch) {
+        this.voicePitch = voicePitch;
+        return this;
+    }
+
+    public TTS voiceRate(String voiceRate) {
+        this.voiceRate = voiceRate;
+        return this;
+    }
+
+    public TTS voiceVolume(String voiceVolume) {
+        this.voiceVolume = voiceVolume;
+        return this;
+    }
+
+    public TTS fileName(String fileName) {
+        this.fileName = fileName;
+        return this;
     }
 
     public TTS formatMp3() {
@@ -95,6 +110,11 @@ public class TTS {
 
     public TTS formatOpus() {
         this.format = "webm-24khz-16bit-mono-opus";
+        return this;
+    }
+
+    public TTS connectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
         return this;
     }
 
@@ -119,6 +139,38 @@ public class TTS {
         if (voice == null) {
             throw new RuntimeException("please set voice");
         }
+    public TTS storage(String storage) {
+        this.storage = storage;
+        return this;
+    }
+
+    public TTS headers(Map<String, String> headers) {
+        this.headers = headers;
+        return this;
+    }
+
+    public TTS overwrite(Boolean overwrite) {
+        this.overwrite = overwrite;
+        return this;
+    }
+
+    /**
+     * Set to true to resolve the rate limiting issue in certain regions.
+     */
+    public TTS isRateLimited(Boolean isRateLimited) {
+        this.isRateLimited = isRateLimited;
+        return this;
+    }
+
+    public TTS parallel(int threadSize) {
+        this.parallelThreadSize = threadSize;
+        return this;
+    }
+
+    public TTS batch(List<TransRecord> recordList) {
+        this.recordList = recordList;
+        return this;
+    }
         init();
         try {
             if (StringUtils.isNotBlank(content)) {
