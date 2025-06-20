@@ -102,6 +102,10 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 
 ## Version
 
+### 1.3.1
+
+- Optimize: Optimize parallel tasks
+
 ### 1.3.0
 
 - New: Now supports batch conversion of multiple text tasks within a single TTS transaction.
