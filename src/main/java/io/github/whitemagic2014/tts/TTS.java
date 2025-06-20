@@ -25,8 +25,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TTS {
 
@@ -240,7 +238,7 @@ public class TTS {
             storageFolder.mkdirs();
         }
         if (executor == null && parallelThreadSize > 1) {
-            executor = new ThreadPoolExecutor(parallelThreadSize, parallelThreadSize, 0, TimeUnit.DAYS,
+            executor = new ThreadPoolExecutor(0, parallelThreadSize, 1, TimeUnit.MINUTES,
                     new LinkedBlockingQueue<>(parallelThreadSize),
                     new BasicThreadFactory.Builder().daemon(true).namingPattern("trans-worker-%d").build(),
                     new CallerRunsPolicy());
