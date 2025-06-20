@@ -104,7 +104,7 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 
 ### 1.3.1
 
-- Optimize: Optimize parallel tasks
+- Optimize: Optimize parallel tasks [PR#15](https://github.com/WhiteMagic2014/tts-edge-java/pull/15)
 
 ### 1.3.0
 
