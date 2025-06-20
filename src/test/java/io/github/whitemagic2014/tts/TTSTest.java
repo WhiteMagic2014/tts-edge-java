@@ -1,0 +1,94 @@
+package io.github.whitemagic2014.tts;
+
+import io.github.whitemagic2014.tts.bean.TransRecord;
+import io.github.whitemagic2014.tts.bean.Voice;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class TTSTest {
+
+    /**
+     * 测试单内容场景能否转换成功
+     */
+    @Test
+    void should_convert_to_mp3_file_success_with_single_content() {
+        String voiceName = "zh-CN-XiaoyiNeural";
+        Optional<Voice> voiceOptional = TTSVoice.provides()
+                .stream()
+                .filter(v -> voiceName.equals(v.getShortName()))
+                .findFirst();
+        if (!voiceOptional.isPresent()) {
+            throw new IllegalStateException("voice not found：" + voiceName);
+        }
+        Voice voice = voiceOptional.get();
+        String filename = voiceName + "-" + "test-tts";
+        String content = "你好，有什么可以帮助你的吗，今天的天气很不错呢";
+        TTS tts = new TTS(voice, content)
+                .findHeadHook()
+                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
+                .fileName(filename)// You can customize the file name; if omitted, a random file name will be generated.
+                .overwrite(true) // When the specified file name is the same, it will either overwrite or append to the file.
+                .formatMp3();  // default mp3.
+//                .formatOpus() // or opus
+//                .voicePitch()
+//                .voiceRate()
+//                .voiceVolume()
+//                .storage()  // the output file storage ,default is ./storage
+//                .connectTimeout(0) // set connect timeout
+        tts.trans();
+        // you can find the voice file in storage folder
+    }
+
+    /**
+     * 测试批量内容场景能否转换成功
+     */
+    @Test
+    void should_convert_to_mp3_file_success_with_multi_content() throws IOException {
+        String voiceName = "zh-CN-XiaoyiNeural";
+        Optional<Voice> voiceOptional = TTSVoice.provides()
+                .stream()
+                .filter(v -> voiceName.equals(v.getShortName()))
+                .findFirst();
+        if (!voiceOptional.isPresent()) {
+            throw new IllegalStateException("voice not found：" + voiceName);
+        }
+        Voice voice = voiceOptional.get();
+        List<TransRecord> recordList = new ArrayList<>();
+        String store = "./storage";
+        for (int i = 0; i < 100; i++) {
+            TransRecord record = new TransRecord();
+            record.setContent(i + ", hello tts, 你好，有什么可以帮助你的吗");
+            record.setFilename(i + ".test-tts");
+            recordList.add(record);
+            Files.deleteIfExists(Paths.get(buildFilename(store, record)));
+        }
+        new TTS(voice)
+                .findHeadHook()
+                .isRateLimited(true)
+                .overwrite(true)
+                .parallel(12)
+                .batch(recordList)
+                .storage(store)
+                .formatMp3()
+                .batchTrans();
+        for (TransRecord record : recordList) {
+            Path path = Paths.get(buildFilename(store, record));
+            Assertions.assertTrue(Files.exists(path), "file not found in " + path.toString());
+        }
+    }
+
+    private static String buildFilename(String store, TransRecord record) {
+        return store + File.separator + record.getFilename() + ".mp3";
+    }
+}
