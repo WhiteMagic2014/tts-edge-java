@@ -18,7 +18,6 @@
     <artifactId>tts-edge-java</artifactId>
     <version>1.3.1</version>
 
-
     <developers>
         <developer>
             <name>magic chen</name>
@@ -39,18 +38,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
 
     <dependencies>
@@ -87,6 +74,15 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>CentralPortal</publishingServerId>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
