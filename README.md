@@ -28,28 +28,87 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 ## demo
 
 ```
-public static void main(String[] args) {
-    // Voice can be found in file "voicesList.json" 
-    Voice voice = TTSVoice.provides().stream().filter(v -> v.getShortName().equals("zh-CN-XiaoyiNeural")).collect(Collectors.toList()).get(0);
-    String content = "你好，有什么可以帮助你的吗";
-    String fileName = new TTS(voice, content)
+  @Test
+    void should_convert_to_mp3_file_success_with_single_content() {
+        String voiceName = "zh-CN-XiaoyiNeural";
+        Optional<Voice> voiceOptional = TTSVoice.provides()
+                .stream()
+                .filter(v -> voiceName.equals(v.getShortName()))
+                .findFirst();
+        if (!voiceOptional.isPresent()) {
+            throw new IllegalStateException("voice not found：" + voiceName);
+        }
+        Voice voice = voiceOptional.get();
+        String filename = voiceName + "-" + "test-tts";
+        String content = "你好，有什么可以帮助你的吗，今天的天气很不错呢";
+        TTS tts = new TTS(voice, content)
                 .findHeadHook()
-                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions..
-                .fileName("file name")// You can customize the file name; if omitted, a random file name will be generated.
-                .overwrite(false) // When the specified file name is the same, it will either overwrite or append to the file.
-                .formatMp3()  // default mp3.
+                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
+                .fileName(filename)// You can customize the file name; if omitted, a random file name will be generated.
+                .overwrite(true) // When the specified file name is the same, it will either overwrite or append to the file.
+                .formatMp3();  // default mp3.
 //                .formatOpus() // or opus
 //                .voicePitch()
 //                .voiceRate()
 //                .voiceVolume()
 //                .storage()  // the output file storage ,default is ./storage
 //                .connectTimeout(0) // set connect timeout
-                .trans();
+        tts.trans();
         // you can find the voice file in storage folder
-}
+    }
+    
+    void should_convert_to_mp3_file_success_with_multi_content() throws IOException {
+        String voiceName = "zh-CN-XiaoyiNeural";
+        Optional<Voice> voiceOptional = TTSVoice.provides()
+                .stream()
+                .filter(v -> voiceName.equals(v.getShortName()))
+                .findFirst();
+        if (!voiceOptional.isPresent()) {
+            throw new IllegalStateException("voice not found：" + voiceName);
+        }
+        Voice voice = voiceOptional.get();
+        List<TransRecord> recordList = new ArrayList<>();
+        String store = "./storage";
+
+        // create batch task
+        for (int i = 0; i < 100; i++) {
+            TransRecord record = new TransRecord();
+            record.setContent(i + ", hello tts, 你好，有什么可以帮助你的吗");
+            record.setFilename(i + ".test-tts");
+            recordList.add(record);
+            Files.deleteIfExists(Paths.get(buildFilename(store, record)));
+        }
+        new TTS(voice)
+                .findHeadHook()
+                .isRateLimited(true)
+                .overwrite(true)
+                .batch(recordList) // set batch task
+                .parallel(12) // set up 12 parallel threads
+                .storage(store)
+                .formatMp3()
+                .batchTrans(); // trans
+        for (TransRecord record : recordList) {
+            Path path = Paths.get(buildFilename(store, record));
+            Assertions.assertTrue(Files.exists(path), "file not found in " + path.toString());
+        }
+    }
+
+    private static String buildFilename(String store, TransRecord record) {
+        return store + File.separator + record.getFilename() + ".mp3";
+    }
+
+
 ```
 
 ## Version
+
+### 1.3.0
+
+- New: Now supports batch conversion of multiple text tasks within a single TTS transaction.
+- Optimize: A new parameter, `enableVttFile`, has been added. This parameter determines whether VTT file support is enabled, with the default setting being `false`
+- Optimize: Refactored some of the code.
+- Update: Upgraded some dependency packages.
+- Thanks to user [lifeopsgo](https://github.com/lifeopsgo) for making nearly all the contributions to this version update.[PR#13](https://github.com/WhiteMagic2014/tts-edge-java/pull/13)
 
 ### 1.2.6
 
@@ -67,8 +126,8 @@ public static void main(String[] args) {
 
 ### 1.2.3
 
-- Optimize: A new parameter, overWrite, has been added. When the same file name is provided, if overWrite = true, it
-  will overwrite the original audio file and VTT subtitle file. If overWrite = false, it will continue to append to the
+- Optimize: A new parameter, `overWrite`, has been added. When the same file name is provided, if overWrite = `true`, it
+  will overwrite the original audio file and VTT subtitle file. If overWrite = `false`, it will continue to append to the
   original audio file and VTT subtitle file.
 
 ### 1.2.2

@@ -132,11 +132,6 @@ public class TTS {
         return this;
     }
 
-    public TTS headers(Map<String, String> headers) {
-        this.headers = headers;
-        return this;
-    }
-
     public TTS overwrite(Boolean overwrite) {
         this.overwrite = overwrite;
         return this;

@@ -2,7 +2,6 @@ package io.github.whitemagic2014.tts;
 
 import io.github.whitemagic2014.tts.bean.TransRecord;
 import io.github.whitemagic2014.tts.bean.Voice;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +13,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class TTSTest {
 
@@ -66,6 +64,8 @@ public class TTSTest {
         Voice voice = voiceOptional.get();
         List<TransRecord> recordList = new ArrayList<>();
         String store = "./storage";
+
+        // create batch task
         for (int i = 0; i < 100; i++) {
             TransRecord record = new TransRecord();
             record.setContent(i + ", hello tts, 你好，有什么可以帮助你的吗");
@@ -77,11 +77,11 @@ public class TTSTest {
                 .findHeadHook()
                 .isRateLimited(true)
                 .overwrite(true)
-                .parallel(12)
-                .batch(recordList)
+                .batch(recordList) // set batch task
+                .parallel(12) // set up 12 parallel threads
                 .storage(store)
                 .formatMp3()
-                .batchTrans();
+                .batchTrans(); // trans
         for (TransRecord record : recordList) {
             Path path = Paths.get(buildFilename(store, record));
             Assertions.assertTrue(Files.exists(path), "file not found in " + path.toString());
