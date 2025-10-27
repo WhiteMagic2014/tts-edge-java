@@ -5,33 +5,23 @@ import io.github.whitemagic2014.tts.bean.Voice;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
-import java.util.concurrent.TimeUnit;
 
 public class TTS {
 
     private static final String EDGE_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-    private static final  String EDGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36 Edg/99.0.1150.55";
-    private static final  String EDGE_ORIGIN = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold";
-    private static final  String VOICES_LIST_URL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+    private static final String EDGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36 Edg/99.0.1150.55";
+    private static final String EDGE_ORIGIN = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold";
+    private static final String VOICES_LIST_URL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 
     private final Voice voice;
 
@@ -59,7 +49,7 @@ public class TTS {
     /**
      * Whether to enable VTT file support, default false
      */
-    private boolean enableVttFile = true;
+    private boolean enableVttFile = false;
 
     /**
      * this via is use to batch convert to voice.
@@ -147,6 +137,11 @@ public class TTS {
         return this;
     }
 
+    public TTS enableVttFile() {
+        this.enableVttFile = true;
+        return this;
+    }
+
     /**
      * Set to true to resolve the rate limiting issue in certain regions.
      */
@@ -173,6 +168,35 @@ public class TTS {
         }
         return doTrans(content, fileName);
     }
+
+    /**
+     * In this mode, audio files and subtitle files will not be generated; only the original byte stream will be returned.
+     *
+     * @return Origin ByteArrayOutputStream
+     */
+    public ByteArrayOutputStream transToAudioStream() {
+        init();
+        this.content = removeIncompatibleCharacters(content);
+        if (StringUtils.isBlank(content)) {
+            throw new IllegalArgumentException("content must not be blank");
+        }
+        String dateStr = dateToString(new Date());
+        String reqId = uuid();
+        String audioFormat = mkAudioFormat(dateStr, format);
+        String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
+        String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
+        try {
+            TTSWebsocketByteStream client = new TTSWebsocketByteStream( createSecMSGEC(isRateLimited), headers, connectTimeout);
+            client.send(audioFormat);
+            client.send(ssmlHeadersPlusData);
+            client.startBlocking();
+            return client.getOutputStream();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     public void batchTrans() {
         init();
@@ -213,7 +237,7 @@ public class TTS {
         client.openSession(new MessageListener(storage, realFilename, findHeadHook, enableVttFile, overwrite));
         client.send(audioFormat);
         client.send(ssmlHeadersPlusData);
-        client.finishBlocking();
+        client.startBlocking();
         return realFilename;
     }
 

@@ -43,9 +43,9 @@ public class TTSWebsocket extends WebSocketClient {
         ex.printStackTrace();
     }
 
-    public void finishBlocking() {
+    public void startBlocking() {
         try {
-            this.messageListener.finishBlocking();
+            this.messageListener.startBlocking();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

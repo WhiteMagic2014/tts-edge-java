@@ -65,7 +65,7 @@ public class MessageListener {
         }
     }
 
-    public void finishBlocking() throws InterruptedException {
+    public void startBlocking() throws InterruptedException {
         this.sessionLatch.await();
     }
 

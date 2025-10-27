@@ -5,7 +5,9 @@ import io.github.whitemagic2014.tts.bean.Voice;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +17,38 @@ import java.util.List;
 import java.util.Optional;
 
 public class TTSTest {
+
+
+    @Test
+    void convert_to_mp3_with_byte_stream() {
+        String voiceName = "zh-CN-XiaoyiNeural";
+        Optional<Voice> voiceOptional = TTSVoice.provides()
+                .stream()
+                .filter(v -> voiceName.equals(v.getShortName()))
+                .findFirst();
+        if (!voiceOptional.isPresent()) {
+            throw new IllegalStateException("voice not found：" + voiceName);
+        }
+        Voice voice = voiceOptional.get();
+        String content = "你好，有什么可以帮助你的吗，今天的天气很不错呢";
+
+        TTS tts = new TTS(voice, content)
+                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
+                .formatMp3();  // default mp3.
+//                .formatOpus() // or opus
+//                .voicePitch()
+//                .voiceRate()
+//                .voiceVolume()
+//                .connectTimeout(0) // set connect timeout
+
+        ByteArrayOutputStream stream = tts.transToAudioStream();
+        // Write to file to test if the stream is correct.
+        try (FileOutputStream fileOutputStream = new FileOutputStream("./storage/test.mp3")) {
+            stream.writeTo(fileOutputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * 测试单内容场景能否转换成功
