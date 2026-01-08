@@ -135,6 +135,8 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 
 ## Version
 
+### 1.3.3
+- Update CHROMIUM_FULL_VERSION & SEC_MS_GEC_VERSION to fix 403 error
 
 ### 1.3.2
 

@@ -12,14 +12,33 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.*;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
+import java.util.concurrent.TimeUnit;
 
 public class TTS {
 
+    private static final String CHROMIUM_FULL_VERSION = "143.0.3650.75";
+    private static final String CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split("\\.")[0];
+    private static final String SEC_MS_GEC_VERSION = "1-" + CHROMIUM_FULL_VERSION;
+
+    private static final String EDGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/" + CHROMIUM_MAJOR_VERSION + ".0.0.0 Safari/537.36 " +
+            "Edg/" + CHROMIUM_MAJOR_VERSION + ".0.0.0";
     private static final String EDGE_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-    private static final String EDGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36 Edg/99.0.1150.55";
     private static final String EDGE_ORIGIN = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold";
     private static final String VOICES_LIST_URL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 
@@ -186,7 +205,7 @@ public class TTS {
         String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
         String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
         try {
-            TTSWebsocketByteStream client = new TTSWebsocketByteStream( createSecMSGEC(isRateLimited), headers, connectTimeout);
+            TTSWebsocketByteStream client = new TTSWebsocketByteStream(createSecMSGEC(isRateLimited), headers, connectTimeout);
             client.send(audioFormat);
             client.send(ssmlHeadersPlusData);
             client.startBlocking();
@@ -309,8 +328,9 @@ public class TTS {
             return EDGE_URL;
         }
         try {
-            String SEC_MS_GEC_Version = "1-130.0.2849.68";
-            long ticks = (long) (Math.floor((System.currentTimeMillis() / 1000.0) + 11644473600L) * 10000000);
+            long epoch1601 = Instant.parse("1601-01-01T00:00:00Z").toEpochMilli();
+            long nowUtcMillis = Instant.now().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
+            long ticks = (nowUtcMillis - epoch1601) * 10000;
             long roundedTicks = ticks - (ticks % 3000000000L);
             String str = roundedTicks + "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
             MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
@@ -324,7 +344,7 @@ public class TTS {
                 hexString.append(hex);
             }
             String SEC_MS_GEC = hexString.toString().toUpperCase();
-            return EDGE_URL + String.format("&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s", SEC_MS_GEC, SEC_MS_GEC_Version);
+            return EDGE_URL + String.format("&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s", SEC_MS_GEC, SEC_MS_GEC_VERSION);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
