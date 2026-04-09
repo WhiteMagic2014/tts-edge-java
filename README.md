@@ -28,38 +28,7 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 ## demo
 
 ```
-    @Test
-    void convert_to_mp3_with_byte_stream() {
-        String voiceName = "zh-CN-XiaoyiNeural";
-        Optional<Voice> voiceOptional = TTSVoice.provides()
-                .stream()
-                .filter(v -> voiceName.equals(v.getShortName()))
-                .findFirst();
-        if (!voiceOptional.isPresent()) {
-            throw new IllegalStateException("voice not found：" + voiceName);
-        }
-        Voice voice = voiceOptional.get();
-        String content = "你好，有什么可以帮助你的吗，今天的天气很不错呢";
-
-        TTS tts = new TTS(voice, content)
-                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
-                .formatMp3();  // default mp3.
-//                .formatOpus() // or opus
-//                .voicePitch()
-//                .voiceRate()
-//                .voiceVolume()
-//                .connectTimeout(0) // set connect timeout
-
-        ByteArrayOutputStream stream = tts.transToAudioStream();
-        // Write to file to test if the stream is correct.
-        try (FileOutputStream fileOutputStream = new FileOutputStream("./storage/test.mp3")) {
-            stream.writeTo(fileOutputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
+  // It is recommended to use this method ！！！
   @Test
     void should_convert_to_mp3_file_success_with_single_content() {
         String voiceName = "zh-CN-XiaoyiNeural";
@@ -130,6 +99,36 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
         return store + File.separator + record.getFilename() + ".mp3";
     }
 
+    @Test
+    void convert_to_mp3_with_byte_stream() {
+        String voiceName = "zh-CN-XiaoyiNeural";
+        Optional<Voice> voiceOptional = TTSVoice.provides()
+                .stream()
+                .filter(v -> voiceName.equals(v.getShortName()))
+                .findFirst();
+        if (!voiceOptional.isPresent()) {
+            throw new IllegalStateException("voice not found：" + voiceName);
+        }
+        Voice voice = voiceOptional.get();
+        String content = "你好，有什么可以帮助你的吗，今天的天气很不错呢";
+
+        TTS tts = new TTS(voice, content)
+                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
+                .formatMp3();  // default mp3.
+//                .formatOpus() // or opus
+//                .voicePitch()
+//                .voiceRate()
+//                .voiceVolume()
+//                .connectTimeout(0) // set connect timeout
+
+        ByteArrayOutputStream stream = tts.transToAudioStream();
+        // Write to file to test if the stream is correct.
+        try (FileOutputStream fileOutputStream = new FileOutputStream("./storage/test.mp3")) {
+            stream.writeTo(fileOutputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 ```
 
