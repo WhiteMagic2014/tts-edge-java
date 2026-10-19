@@ -4,7 +4,11 @@ java sdk for Edge Read Aloud
 
 [click me have a try](https://server.whitemagic2014.com/tts/)
 
+Requires **Java 8** or higher.
+
 ## Setup
+
+Replace `version` below with the latest release, see [Version](#version).
 
 ### maven
 
@@ -44,7 +48,6 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
         String content = "你好，有什么可以帮助你的吗，今天的天气很不错呢";
         TTS tts = new TTS(voice, content)
                 .findHeadHook()
-                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
                 .fileName(filename)// You can customize the file name; if omitted, a random file name will be generated.
                 .overwrite(true) // When the specified file name is the same, it will either overwrite or append to the file.
                 .formatMp3();  // default mp3.
@@ -52,6 +55,7 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 //                .voicePitch()
 //                .voiceRate()
 //                .voiceVolume()
+//                .enableVttFile()  // generate a vtt subtitle file with the same name, default false
 //                .storage()  // the output file storage ,default is ./storage
 //                .connectTimeout(0) // set connect timeout
         tts.trans();
@@ -82,7 +86,6 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
         }
         new TTS(voice)
                 .findHeadHook()
-                .isRateLimited(true)
                 .overwrite(true)
                 .batch(recordList) // set batch task
                 .parallel(12) // set up 12 parallel threads
@@ -113,7 +116,6 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
         String content = "你好，有什么可以帮助你的吗，今天的天气很不错呢";
 
         TTS tts = new TTS(voice, content)
-                .isRateLimited(true) // Set to true to resolve the rate limiting issue in certain regions.
                 .formatMp3();  // default mp3.
 //                .formatOpus() // or opus
 //                .voicePitch()
@@ -133,6 +135,14 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 ```
 
 ## Version
+
+### 1.3.4
+- Thanks to user [Logicism](https://github.com/LogicismDev)   [PR#23](https://github.com/WhiteMagic2014/tts-edge-java/pull/23)
+- Fix: Resolved the `403` error by upgrading `Sec-MS-GEC` from **v1 to v2** (`SEC_MS_GEC_VERSION` is now `2-<chromium version>`).
+- New: Added `EdgeGec`, a dependency-free implementation of the Edge `Sec-MS-GEC` v2 token algorithm.
+- New: Added `EdgeTtsClock`, which calibrates the local clock against the server `Date` header to avoid `403` errors caused by clock drift.
+- Optimize: Added `Accept-Encoding` and `Accept-Language` request headers.
+- **Breaking Change**: The `isRateLimited` parameter has been removed. `Sec-MS-GEC` v2 requires a token on every request, so it is now always enabled and no configuration is needed. Please remove `.isRateLimited(true)` from your code when upgrading.
 
 ### 1.3.3
 - Update CHROMIUM_FULL_VERSION & SEC_MS_GEC_VERSION to fix 403 error
@@ -161,7 +171,7 @@ implementation 'io.github.whitemagic2014:tts-edge-java:version'
 
 ### 1.2.5
 
-- Optimize: Setting the parameter `isRateLimited` to true can resolve rate limiting issues in certain regions.
+- Optimize: Setting the parameter `isRateLimited` to true can resolve rate limiting issues in certain regions. (Deprecated in 1.3.4, this parameter has been removed)
 - Thanks to user [PoliceZ](https://github.com/PoliceZ), the answer in
   the [issue](https://github.com/Mai-Onsyn/VeloVoice/issues/9) was helpful to me.
 
