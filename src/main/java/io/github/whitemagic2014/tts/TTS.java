@@ -33,14 +33,14 @@ public class TTS {
 
     private static final String CHROMIUM_FULL_VERSION = "143.0.3650.75";
     private static final String CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split("\\.")[0];
-    private static final String SEC_MS_GEC_VERSION = "1-" + CHROMIUM_FULL_VERSION;
+    private static final String SEC_MS_GEC_VERSION = "2-" + CHROMIUM_FULL_VERSION;
 
     private static final String EDGE_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/" + CHROMIUM_MAJOR_VERSION + ".0.0.0 Safari/537.36 " +
             "Edg/" + CHROMIUM_MAJOR_VERSION + ".0.0.0";
+
     private static final String EDGE_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
     private static final String EDGE_ORIGIN = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold";
-    private static final String VOICES_LIST_URL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 
     private final Voice voice;
 
@@ -59,11 +59,6 @@ public class TTS {
      * When the specified file name is the same, it will either overwrite or append to the file.
      */
     private Boolean overwrite = true;
-
-    /**
-     * Set to true to resolve the rate limiting issue in certain regions.
-     */
-    private Boolean isRateLimited = false;
 
     /**
      * Whether to enable VTT file support, default false
@@ -161,14 +156,6 @@ public class TTS {
         return this;
     }
 
-    /**
-     * Set to true to resolve the rate limiting issue in certain regions.
-     */
-    public TTS isRateLimited(Boolean isRateLimited) {
-        this.isRateLimited = isRateLimited;
-        return this;
-    }
-
     public TTS parallel(int threadSize) {
         this.parallelThreadSize = threadSize;
         return this;
@@ -205,7 +192,7 @@ public class TTS {
         String ssml = mkssml(voice.getLocale(), voice.getName(), voicePitch, voiceRate, voiceVolume, content);
         String ssmlHeadersPlusData = ssmlHeadersPlusData(reqId, dateStr, ssml);
         try {
-            TTSWebsocketByteStream client = new TTSWebsocketByteStream(createSecMSGEC(isRateLimited), headers, connectTimeout);
+            TTSWebsocketByteStream client = new TTSWebsocketByteStream(createSecMSGEC(), headers, connectTimeout);
             client.send(audioFormat);
             client.send(ssmlHeadersPlusData);
             client.startBlocking();
@@ -270,6 +257,8 @@ public class TTS {
             this.headers.put("Pragma", "no-cache");
             this.headers.put("Cache-Control", "no-cache");
             this.headers.put("User-Agent", EDGE_UA);
+            this.headers.put("Accept-Encoding", "gzip, deflate, br, zstd");
+            this.headers.put("Accept-Language", "en-US,en;q=0.9");
         }
         File storageFolder = new File(storage);
         if (!storageFolder.exists()) {
@@ -287,10 +276,10 @@ public class TTS {
         return websocketMap.compute(Thread.currentThread().getId(), (threadId, client) -> {
             try {
                 if (client == null) {
-                    client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
+                    client = new TTSWebsocket(createSecMSGEC(), headers, connectTimeout);
                 }
                 if (!client.isOpen()) {
-                    client = new TTSWebsocket(createSecMSGEC(isRateLimited), headers, connectTimeout);
+                    client = new TTSWebsocket(createSecMSGEC(), headers, connectTimeout);
                 }
                 return client;
             } catch (URISyntaxException | InterruptedException e) {
@@ -323,30 +312,15 @@ public class TTS {
         return new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (zzzz)").format(date);
     }
 
-    public static String createSecMSGEC(boolean isRateLimited) {
-        if (!isRateLimited) {
-            return EDGE_URL;
-        }
+    public static String createSecMSGEC() {
+        // Removed isRateLimited due to Sec-MS-GEC 2 requiring a token every request.
         try {
-            long epoch1601 = Instant.parse("1601-01-01T00:00:00Z").toEpochMilli();
-            long nowUtcMillis = Instant.now().atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
-            long ticks = (nowUtcMillis - epoch1601) * 10000;
-            long roundedTicks = ticks - (ticks % 3000000000L);
-            String str = roundedTicks + "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-            byte[] hash = sha256.digest(str.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            String SEC_MS_GEC = hexString.toString().toUpperCase();
-            return EDGE_URL + String.format("&Sec-MS-GEC=%s&Sec-MS-GEC-Version=%s", SEC_MS_GEC, SEC_MS_GEC_VERSION);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            long adjustedTicks = EdgeTtsClock.getAdjustedTicks();
+            String secMsGec = EdgeGec.generateToken(adjustedTicks);
+
+            return EDGE_URL + "&Sec-MS-GEC=" + secMsGec + "&Sec-MS-GEC-Version=" + SEC_MS_GEC_VERSION;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate token", e);
         }
     }
 
